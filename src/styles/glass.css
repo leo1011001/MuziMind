@@ -454,3 +454,9 @@ a {
     padding: var(--space-md);
   }
 }
+
+/* App background container */
+.app-bg {
+  min-height: 100vh;
+  width: 100%;
+}

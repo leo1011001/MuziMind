@@ -1,0 +1,109 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { FaChartBar, FaMusic, FaTrophy, FaFire, FaArrowLeft } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import './Stats.css';
+
+export const StatsPage: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/stats`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [user]);
+
+  if (!user) {
+    return <div className="page-container"><p>Моля, влезте в системата</p></div>;
+  }
+
+  if (loading) {
+    return <div className="page-container"><p>Зареждане на статистика...</p></div>;
+  }
+
+  return (
+    <div className="page-container stats-page">
+      <div className="page-header">
+        <button className="back-btn" onClick={() => navigate('/')}>
+          <FaArrowLeft /> Назад
+        </button>
+        <h1><FaChartBar /> Твоята музикална статистика</h1>
+      </div>
+
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card big">
+            <div className="stat-icon"><FaMusic /></div>
+            <div className="stat-value">{stats.totalScrobbles?.toLocaleString() || 0}</div>
+            <div className="stat-label">Общо слушания</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon"><FaTrophy /></div>
+            <div className="stat-value">{stats.topArtists?.length || 0}</div>
+            <div className="stat-label">Любими артисти</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon"><FaMusic /></div>
+            <div className="stat-value">{stats.topGenres?.length || 0}</div>
+            <div className="stat-label">Жанрове</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon"><FaFire /></div>
+            <div className="stat-value">{Math.max(...(stats.listeningHours || []))}h</div>
+            <div className="stat-label">Пиков час</div>
+          </div>
+        </div>
+      )}
+
+      <div className="stats-section">
+        <h2>Топ артисти</h2>
+        <div className="top-list">
+          {stats?.topArtists?.map((artist: any, i: number) => (
+            <div key={i} className="list-item">
+              <div className="rank">{i + 1}</div>
+              <div className="info">
+                <div className="name">{artist.name}</div>
+                <div className="count">{artist.playCount} слушания</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="stats-section">
+        <h2>Жанрове</h2>
+        <div className="genre-cloud">
+          {stats?.topGenres?.map((genre: any, i: number) => (
+            <div key={i} className="genre-tag" style={{ fontSize: `${12 + (genre.playCount % 8)}px` }}>
+              {genre.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StatsPage;

@@ -1,0 +1,456 @@
+// Load environment as the very first thing
+import './loadEnv.ts';
+
+import express from 'express';
+import cors from 'cors';
+import session from 'express-session';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { ObjectId } from 'mongodb';
+
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+  }
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+console.log('Loaded LASTFM_API_KEY:', process.env.LASTFM_API_KEY ? 'YES' : 'NO');
+console.log('Loaded MONGODB_URI:', process.env.MONGODB_URI ? 'YES' : 'NO');
+
+// Import database and services
+import { db } from '../src/api/database.ts';
+import { authService } from '../src/api/auth.ts';
+import { syncService } from '../src/api/sync.ts';
+import { lastFMService } from '../src/api/lastfm.ts';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
+
+app.use(express.json());
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'muzimind-dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Connect to database and seed admin user if missing
+async function initServer() {
+  try {
+    await db.connect();
+    console.log('🔗 DB connected, checking admin user...');
+    const admin = await db.users.findOne({ role: 'admin' });
+    if (!admin) {
+      console.log('⚙️ Creating default admin user (admin@localhost / adminpass) with Last.fm connection');
+      try {
+        const lastfmUsername = 'leo1011001';
+        const result = await authService.register('admin@localhost', 'admin', 'adminpass', lastfmUsername);
+        if (result.success && result.userId) {
+          await db.updateUser(result.userId, { role: 'admin' });
+          console.log('✅ Admin user created with lastfmUsername:', lastfmUsername);
+
+          // Try to fetch Last.fm info to validate API key and username
+          try {
+            const info = await lastFMService.getUserInfo(lastfmUsername);
+            console.log('Last.fm user info fetched for', lastfmUsername, '->', info?.user?.name || 'NO_NAME');
+          } catch (infoErr) {
+            console.warn('⚠️ Could not fetch Last.fm info for admin user:', infoErr);
+          }
+
+          // Attempt an initial sync to populate sample scrobbles (from last 7 days)
+          try {
+            await syncService.syncUserWithLastFM(result.userId!, lastfmUsername, 7);
+            console.log('✅ Initial sync for admin completed');
+          } catch (syncErr) {
+            console.warn('⚠️ Initial sync failed for admin:', syncErr);
+          }
+        } else {
+          console.warn('⚠️ Could not create admin user:', result.error);
+        }
+      } catch (e) {
+        console.warn('⚠️ Admin creation error:', e);
+      }
+    } else {
+      console.log('✅ Admin user exists.');
+    }
+  } catch (err) {
+    console.error('DB init error:', err);
+  }
+}
+
+// Auth middleware - DEFINE THIS BEFORE ROUTES
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Не сте влезли в системата' });
+  }
+  next();
+};
+
+// Define all routes BEFORE calling listen
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    // Try to ping the database
+    await db.users.findOne({});
+    res.json({ 
+      status: 'healthy', 
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected',
+      error: errorMessage 
+    });
+  }
+});
+
+// Register endpoint
+app.post('/api/register', async (req, res) => {
+  try {
+    const { email, username, password, lastfmUsername } = req.body;
+    
+    if (!email || !username || !password || !lastfmUsername) {
+      return res.status(400).json({ error: 'Моля, попълнете всички полета включително Last.fm потребител' });
+    }
+    
+    const result = await authService.register(email, username, password, lastfmUsername);
+
+    if (!result.success || !result.userId) {
+      return res.status(400).json({ error: result.error || 'Registration failed' });
+    }
+
+    // Fetch created user and return sanitized object
+    const createdUser = await db.findUserById(result.userId);
+    if (!createdUser) {
+      return res.status(500).json({ error: 'Потребителят не може да бъде създаден' });
+    }
+
+    // Set session only after user is confirmed
+    req.session.userId = result.userId;
+
+    const { passwordHash, ...userData } = createdUser as any;
+    res.json({ success: true, user: userData });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Login endpoint
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Моля, попълнете имейл и парола' });
+    }
+    
+    const result = await authService.login(email, password);
+    
+    if (result.success && result.user && result.user._id) {
+      req.session.userId = result.user._id.toString();
+      res.json({ 
+        success: true, 
+        user: {
+          id: result.user._id.toString(),
+          email: result.user.email,
+          username: result.user.username,
+          preferences: result.user.preferences,
+          lastfmUsername: result.user.lastfmUsername,
+          stats: result.user.stats
+        }
+      });
+    } else {
+      res.status(401).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Logout endpoint
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+    }
+    res.json({ success: true });
+  });
+});
+
+// Get current user
+app.get('/api/user', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Не сте влезли в системата' });
+    }
+    const user = await db.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Потребител не е намерен' });
+    }
+    
+    // Don't send password hash
+    const { passwordHash, ...userData } = user;
+    res.json(userData);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Sync with Last.fm
+app.post('/api/sync/lastfm', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Не сте влезли в системата' });
+    }
+    
+    const user = await db.findUserById(userId);
+    
+    if (!user?.lastfmUsername) {
+      return res.status(400).json({ 
+        error: 'Моля, свържете вашия Last.fm профил първо' 
+      });
+    }
+    
+    // Sync from last 7 days
+    const result = await syncService.syncUserWithLastFM(
+      req.session.userId!,
+      user.lastfmUsername,
+      7
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка при синхронизация' });
+  }
+});
+
+// Get user stats
+app.get('/api/stats', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Не сте влезли в системата' });
+    }
+    const data = await syncService.getUserListeningData(userId);
+    res.json(data);
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка при зареждане на статистика' });
+  }
+});
+
+// Get currently playing track
+app.get('/api/now-playing', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Не сте влезли в системата' });
+    }
+    
+    const db_instance = db;
+    const trackHistory = await db_instance.trackHistory
+      .find({ userId: new ObjectId(userId) })
+      .sort({ playedAt: -1 })
+      .limit(5)
+      .toArray();
+    
+    const currentlyPlaying = trackHistory[0] || null;
+    const recentHistory = trackHistory.slice(1, 5) || [];
+    
+    res.json({
+      currentlyPlaying,
+      recentHistory,
+      lastSync: new Date()
+    });
+  } catch (error) {
+    console.error('Get now playing error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка при зареждане на текущата песен' });
+  }
+});
+
+// Update preferences
+app.put('/api/preferences', requireAuth, async (req, res) => {
+  try {
+    const { preferences } = req.body;
+    const success = await authService.updatePreferences(
+      req.session.userId!,
+      preferences
+    );
+    
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Грешка при обновяване на настройките' });
+    }
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Connect Last.fm
+app.post('/api/connect/lastfm', requireAuth, async (req, res) => {
+  try {
+    const { lastfmUsername } = req.body;
+    
+    if (!lastfmUsername) {
+      return res.status(400).json({ error: 'Моля, въведете Last.fm потребителско име' });
+    }
+    
+    const success = await authService.connectLastFM(req.session.userId!, lastfmUsername);
+    
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Грешка при свързване с Last.fm' });
+    }
+  } catch (error) {
+    console.error('Connect Last.fm error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(join(__dirname, '../dist')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, '../dist/index.html'));
+  });
+}
+
+// Prediction endpoint (simple)
+app.get('/api/predict', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    // @ts-ignore - syncService gets a dynamic method
+    const prediction = await (syncService as any).predictForUser(userId);
+    res.json(prediction);
+  } catch (error) {
+    console.error('Prediction error:', error);
+    res.status(500).json({ error: 'Грешка при генериране на прогноза' });
+  }
+});
+
+// Guest stats endpoint - lightweight view from Last.fm for demo/guest mode
+app.get('/api/guest-stats', async (req, res) => {
+  try {
+    const lastfmUsername = 'leo1011001';
+    // Get top artists and some recent tracks
+    const topArtistsResp = await lastFMService.getTopArtists(lastfmUsername, '7day', 10);
+    const recentResp = await lastFMService.getRecentTracks(lastfmUsername, 10);
+
+    const topArtists = (topArtistsResp?.topartists?.artist || []).slice(0, 10).map((a: any) => ({
+      name: a.name,
+      playCount: parseInt(a.playcount || '0')
+    }));
+
+    const recent = (recentResp || []).slice(0, 10).map((t: any) => ({
+      name: t.name,
+      artist: t.artist['#text'],
+      album: t.album?.['#text'] || '',
+      date: t.date?.['#text'] || null
+    }));
+
+    res.json({
+      username: lastfmUsername,
+      topArtists,
+      recent
+    });
+  } catch (error) {
+    console.error('Guest stats error:', error);
+    res.status(500).json({ error: 'Could not fetch guest stats' });
+  }
+});
+
+// Initialize server and start listening
+console.log('🔄 Starting initServer...');
+initServer()
+  .then(() => {
+    console.log('✅ initServer promise resolved');
+    console.log('✅ Server init complete, now starting listener...');
+    
+    console.log('About to call app.listen on port:', PORT);
+    const portNumber = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
+    const server = app.listen(portNumber, '0.0.0.0', () => {
+      console.log(`🚀 Server running on http://0.0.0.0:${portNumber}`);
+      console.log(`📁 MongoDB database: muzimind`);
+      console.log('✅ Server is READY to accept requests!');
+      console.log('Server is ACTIVELY listening. Do not exit.');
+    });
+
+    // DO NOT CALL unref() - we want the server to keep the process alive
+    // The server handle itself keeps the event loop alive
+
+    console.log('✅ app.listen() call completed, server object created');
+
+    server.on('error', (err) => {
+      console.error('❌ Server error event:', err);
+      // Continue running despite errors
+    });
+
+    server.on('close', () => {
+      console.warn('⚠️ Server closed event fired');
+    });
+
+    // Set up a keepalive interval that won't prevent shutdown if needed
+    const keepAliveInterval = setInterval(() => {
+      // Do nothing, but keep process alive
+      // const uptime = process.uptime();
+      // if (uptime % 60 < 1) {
+      //   console.log('Server still running, uptime:', uptime.toFixed(0), 'seconds');
+      // }
+    }, 30000); // Every 30 seconds (don't log constantly)
+    
+    // Keep the interval referenced so it keeps the process alive
+    // Do NOT call unref() on it
+    keepAliveInterval.ref();
+
+    console.log('✅ Keep-alive interval configured');
+    console.log('🎉 Backend initialization complete. Listening for incoming connections...');
+  })
+  .catch(err => {
+    console.error('❌ Server initialization failed:', err);
+    console.error('FULL ERROR:', JSON.stringify(err, null, 2));
+    process.exit(1);
+  });
+
+// Log exit event
+process.on('exit', (code) => {
+  console.log(`\n⚠️ Process exiting with code: ${code}\n`);
+});
+
+process.on('SIGINT', () => {
+  console.log('\n🛑 Received SIGINT, shutting down gracefully...\n');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Received SIGTERM, shutting down gracefully...\n');
+  process.exit(0);
+});
