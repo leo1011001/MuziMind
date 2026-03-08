@@ -22,9 +22,9 @@ export function calculateListeningStats(
   const topArtistsShare =
     totalArtistPlays === 0 ? 0 : topArtistsPlays / totalArtistPlays
 
-  const genreSet = new Set<string>()
+  const tagSet = new Set<string>()
   artists.forEach((a) => {
-    a.tags?.forEach((tag) => genreSet.add(tag))
+    a.tags?.forEach((tag) => tagSet.add(tag))
   })
 
   return {
@@ -32,6 +32,6 @@ export function calculateListeningStats(
     uniqueTracks,
     repeatRatio,
     topArtistsShare,
-    uniqueGenres: genreSet.size
+    uniqueTags: tagSet.size
   }
 }

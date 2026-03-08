@@ -33,11 +33,11 @@ export class ReadingGenerator {
       timestamp: scrobble.timestamp.getTime()
     }));
 
-    const artistPlays = artistStats.map(stat => ({
-      artist: stat.artist,
-      playcount: stat.playCount,
-      tags: stat.genres || []
-    }));
+      const artistPlays = artistStats.map(stat => ({
+        artist: stat.artist,
+        playcount: stat.playCount,
+        tags: stat.tags || []
+      }));
 
     // Analyze patterns
     const metrics = calculateListeningStats(trackPlays, artistPlays);
@@ -70,7 +70,40 @@ export class ReadingGenerator {
       throw new Error('No content generated from OpenAI');
     }
 
-    // Store reading in DB
+    // Generate recommendations from top artists and similar artists
+    const lastfmUsername = (await db.findUserById(userId))?.lastfmUsername;
+    let recommendations = [];
+    if (lastfmUsername) {
+      const { lastFMService } = await import('../api/lastfm');
+      // Get top artists
+      const topArtistsResp = await lastFMService.getTopArtists(lastfmUsername, '7day', 5);
+      const topArtists = (topArtistsResp?.topartists?.artist || []).slice(0, 5);
+      // Get top tracks
+      const topTracksResp = await lastFMService.getTopTracks(lastfmUsername, '7day', 5);
+      const topTracks = (topTracksResp?.toptracks?.track || []).slice(0, 5);
+      // Recommend from top tracks
+      recommendations = topTracks.map((t: any) => ({
+        artist: typeof t.artist === 'string' ? t.artist : t.artist['name'] || t.artist['#text'],
+        track: t.name,
+        reason: language === 'bg' ? 'Топ песен от любим артист' : 'Top track from favorite artist'
+      }));
+      // Recommend similar artists (if available)
+      for (const artist of topArtists) {
+        const similarResp = await lastFMService.getSimilarArtists(artist.name, 3);
+        if (similarResp?.similarartists?.artist && Array.isArray(similarResp.similarartists.artist)) {
+          for (const sim of similarResp.similarartists.artist.slice(0, 2)) {
+            recommendations.push({
+              artist: sim.name,
+              track: '',
+              reason: language === 'bg' ? `Подобен на ${artist.name}` : `Similar to ${artist.name}`
+            });
+          }
+        }
+      }
+      // Limit to 6 recommendations
+      recommendations = recommendations.slice(0, 6);
+    }
+
     await db.addReading({
       userId: new ObjectId(userId),
       date: new Date(),
@@ -80,14 +113,14 @@ export class ReadingGenerator {
         en: language === 'en' ? content : '',
         mood: this.detectMood(metrics),
         dominantGenre: artistPlays.length > 0 ? artistPlays[0].artist : 'Unknown',
-        recommendations: [] // TODO: Generate recommendations based on traits
+        recommendations
       },
       statsSnapshot: {
         totalScrobbles: metrics.totalPlays,
         topArtists: artistPlays.slice(0, 5).map(a => a.artist),
         topGenres: Array.from(new Set(artistPlays.flatMap(a => a.tags || []))).slice(0, 5),
-        discoveryRate: metrics.uniqueGenres / Math.max(artistPlays.length, 1),
-        listeningHours: Array(24).fill(0) // TODO: Calculate actual listening hours
+          discoveryRate: Array.from(new Set(artistPlays.flatMap(a => a.tags || []))).length / Math.max(artistPlays.length, 1),
+        listeningHours: Array(24).fill(0)
       },
       viewed: false
     });

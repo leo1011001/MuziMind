@@ -7,7 +7,6 @@ export interface ArtistStats {
   playCount: number;
   firstPlayed: Date;
   lastPlayed: Date;
-  genres: string[];
   tags: string[];
   lovedTracks: string[];
 }
@@ -22,7 +21,6 @@ export const createArtistStats = (
     playCount: 0,
     firstPlayed: new Date(),
     lastPlayed: new Date(),
-    genres: [],
     tags: [],
     lovedTracks: []
   };

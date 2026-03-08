@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LanguageToggle } from '../../components/ui/LanguageToggle';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
 import './Login.css';
@@ -21,7 +20,7 @@ const Login: React.FC = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="language-toggle-container">
-          <LanguageToggle />
+          {/* LanguageToggle removed */}
         </div>
 
         {isLogin ? (

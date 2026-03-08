@@ -7,12 +7,21 @@ export interface UserPreferences {
   readingFrequency: 'daily' | 'weekly' | 'monthly';
 }
 
+export interface UserProfile {
+  bio?: string;
+  pronouns?: string;
+  nationality?: string;
+  gender?: string;
+  avatar?: string;
+}
+
 export interface User {
   _id?: ObjectId;
   email: string;
   username: string;
   passwordHash: string;
   role?: 'user' | 'admin';
+  profile?: UserProfile;
   lastfmUsername?: string;
   lastfmSessionKey?: string;
   lastfmConnectedAt?: Date;
@@ -22,7 +31,7 @@ export interface User {
   stats?: {
     totalScrobbles: number;
     totalArtists: number;
-    totalGenres: number;
+    totalTags: number;
   };
 }
 
@@ -42,7 +51,7 @@ export const createDefaultUser = (email: string, username: string, passwordHash:
     stats: {
       totalScrobbles: 0,
       totalArtists: 0,
-      totalGenres: 0
+      totalTags: 0
     }
   };
 };

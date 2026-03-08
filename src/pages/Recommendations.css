@@ -2,144 +2,246 @@
   padding: 2rem;
 }
 
-.prediction-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 16px;
-  padding: 3rem 2rem;
-  text-align: center;
+/* Header */
+.rec-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
-  animation: slideIn 0.5s ease;
 }
 
-.prediction-card.featured {
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
-}
-
-.card-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  animation: bounce 2s infinite;
-}
-
-.prediction-card h2 {
+.rec-header h1 {
   font-size: 1.8rem;
-  margin-bottom: 1rem;
   color: #fff;
+  margin: 0;
 }
 
-.prediction-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.section {
-  margin-bottom: 3rem;
-}
-
-.peak-hour {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.peak-hour h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: #fff;
-}
-
-.peak-display {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-}
-
-.peak-time {
-  font-size: 4rem;
-  font-weight: bold;
-  color: #6366f1;
-  margin-bottom: 1rem;
-}
-
-.peak-display p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
-}
-
-.recommendations {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 2rem;
-}
-
-.recommendations h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: #fff;
-}
-
-.artist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1.5rem;
-}
-
-.artist-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.artist-card:hover {
-  transform: translateY(-8px);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.artist-rank {
-  display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 1rem;
-}
-
-.artist-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 0.5rem;
-}
-
-.artist-score {
-  font-size: 0.9rem;
+.rec-time-info {
+  font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.6);
 }
 
-@keyframes slideIn {
+.back-btn {
+  align-self: flex-start;
+  font-size: 0.9rem;
+  padding: 0.5rem 1.2rem;
+}
+
+/* Loading */
+.rec-loading {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.rec-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(180, 160, 255, 0.8);
+  border-radius: 50%;
+  animation: recSpin 1s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+.rec-loading p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+}
+
+.auth-prompt {
+  text-align: center;
+  padding: 4rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.2rem;
+}
+
+/* Content */
+.rec-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Prediction Card */
+.rec-prediction-card {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  border-color: rgba(99, 102, 241, 0.25);
+  animation: recSlideIn 0.5s ease;
+}
+
+.rec-prediction-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.rec-prediction-card h2 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #fff;
+}
+
+.rec-prediction-text {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: pre-line;
+}
+
+/* Peak Section */
+.rec-peak-section h2 {
+  font-size: 1.3rem;
+  margin: 0 0 1.5rem 0;
+  color: #fff;
+}
+
+.rec-peak-display {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  border-radius: 12px;
+}
+
+.rec-peak-time {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #6366f1;
+  margin-bottom: 0.75rem;
+}
+
+.rec-peak-display p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.rec-second-peak {
+  margin-top: 0.75rem !important;
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Patterns */
+.rec-patterns-section h2 {
+  font-size: 1.3rem;
+  margin: 0 0 1.5rem 0;
+  color: #fff;
+}
+
+.rec-patterns-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.rec-pattern-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rec-pattern-emoji {
+  font-size: 1.5rem;
+}
+
+.rec-pattern-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rec-pattern-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Artists */
+.rec-artists-section h2 {
+  font-size: 1.3rem;
+  margin: 0 0 1.5rem 0;
+  color: #fff;
+}
+
+.rec-artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.rec-artist-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.rec-artist-card:hover {
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.rec-artist-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.rec-artist-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.3rem;
+}
+
+.rec-artist-score {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Genres */
+.rec-genres-section h2 {
+  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  color: #fff;
+}
+
+.rec-genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rec-genre-tag {
+  padding: 0.4rem 1rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+/* Animations */
+@keyframes recSlideIn {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -150,11 +252,17 @@
   }
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
+@keyframes recSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .rec-patterns-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  50% {
-    transform: translateY(-10px);
+  
+  .rec-peak-time {
+    font-size: 2.5rem;
   }
 }

@@ -34,6 +34,17 @@ export interface LastFMSession {
 }
 
 export class LastFMService {
+    async getSimilarArtists(artist: string, limit: number = 5): Promise<any> {
+      const params = new URLSearchParams({
+        method: 'artist.getsimilar',
+        artist,
+        api_key: this.apiKey,
+        format: 'json',
+        limit: limit.toString()
+      });
+      const response = await fetch(`${BASE_URL}?${params}`);
+      return response.json();
+    }
   private apiKey: string;
   
   constructor() {

@@ -6,14 +6,12 @@ import { QuickStats } from '../../components/stats/QuickStats';
 import { MusicPrediction } from '../../components/music/MusicPrediction';
 import { NowPlaying } from '../../components/music/NowPlaying';
 import { UserListeningHistory } from '../../components/music/UserListeningHistory';
-import { LanguageToggle } from '../../components/ui/LanguageToggle';
 import { MusicOverview } from '../../components/music/MusicOverview';
 import './Home.css';
 
 interface HomeStats {
   totalScrobbles: number;
   topArtists: Array<{ name: string; playCount: number }>;
-  topGenres: Array<{ name: string; playCount: number }>;
   listeningHours: number[];
   recentScrobbles: any[];
 }
@@ -98,12 +96,6 @@ export const Home: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (user?.preferences?.language === 'en') {
-      if (hour < 12) return `Good morning, ${user.username}!`;
-      if (hour < 18) return `Good afternoon, ${user.username}!`;
-      return `Good evening, ${user.username}!`;
-    }
-    
     if (hour < 12) return `Добро утро, ${user?.username}!`;
     if (hour < 18) return `Добър ден, ${user?.username}!`;
     return `Добър вечер, ${user?.username}!`;
@@ -124,14 +116,12 @@ export const Home: React.FC = () => {
         <div className="header-left">
           <h1 className="welcome-title">🎵 {getGreeting()}</h1>
           <p className="welcome-subtitle">
-            {user?.preferences?.language === 'en' 
-              ? "Your musical journey continues here..."
-              : "Твоето музикално пътешествие продължава тук..."}
+            Твоето музикално пътешествие продължава тук...
           </p>
         </div>
         
         <div className="header-right">
-          <LanguageToggle />
+          {/* LanguageToggle removed */}
           
           <button 
             onClick={handleSync}
@@ -141,18 +131,18 @@ export const Home: React.FC = () => {
             {syncing ? (
               <>
                 <span className="spinner"></span>
-                {user?.preferences?.language === 'en' ? 'Syncing...' : 'Синхронизиране...'}
+                Синхронизиране...
               </>
             ) : (
               <>
-                🔄 {user?.preferences?.language === 'en' ? 'Sync Last.fm' : 'Синхронизирай'}
+                🔄 Синхронизирай
               </>
             )}
           </button>
           
           {lastSynced && (
             <div className="last-sync">
-              {user?.preferences?.language === 'en' ? 'Last sync:' : 'Последна синхронизация:'}{' '}
+              Последна синхронизация:{' '}
               {lastSynced.toLocaleTimeString()}
             </div>
           )}
@@ -169,17 +159,15 @@ export const Home: React.FC = () => {
         <div className="glass-card warning-card fade-in">
           <div className="warning-icon">⚠️</div>
           <div className="warning-content">
-            <h3>{user?.preferences?.language === 'en' ? 'Connect Last.fm' : 'Свържи Last.fm'}</h3>
+            <h3>Свържи Last.fm</h3>
             <p>
-              {user?.preferences?.language === 'en'
-                ? 'Connect your Last.fm account to see your listening history and get personalized insights.'
-                : 'Свържи своя Last.fm профил, за да видиш историята си на слушане и да получиш персонализирани прозрения.'}
+              Свържи своя Last.fm профил, за да видиш историята си на слушане и да получиш персонализирани прозрения.
             </p>
             <button 
               className="glass-button primary"
               onClick={() => window.location.href = '/profile?tab=connections'}
             >
-              🔗 {user?.preferences?.language === 'en' ? 'Connect Now' : 'Свържи сега'}
+              🔗 Свържи сега
             </button>
           </div>
         </div>
@@ -197,7 +185,6 @@ export const Home: React.FC = () => {
           
           <DailyReading 
             userId={user?.id || ''}
-            language={user?.preferences?.language || 'bg'}
           />
         </div>
 
@@ -205,7 +192,6 @@ export const Home: React.FC = () => {
         <div className="grid-right">
           <QuickStats 
             stats={stats}
-            language={user?.preferences?.language || 'bg'}
           />
 
           {user && (
@@ -214,7 +200,7 @@ export const Home: React.FC = () => {
           
           <RecentScrobbles 
             scrobbles={stats?.recentScrobbles || []}
-            language={user?.preferences?.language || 'bg'}
+            language="bg"
           />
         </div>
       </div>
@@ -223,49 +209,6 @@ export const Home: React.FC = () => {
       {user && (
         <div className="listening-history-section">
           <UserListeningHistory />
-        </div>
-      )}
-
-      {/* Stats Overview */}
-      {stats && (
-        <div className="stats-overview glass-card fade-in">
-          <h2>
-            {user?.preferences?.language === 'en' 
-              ? '📊 Your Listening Overview' 
-              : '📊 Преглед на слушането'}
-          </h2>
-          
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-value">{stats.totalScrobbles.toLocaleString()}</div>
-              <div className="stat-label">
-                {user?.preferences?.language === 'en' ? 'Total Plays' : 'Общо слушания'}
-              </div>
-            </div>
-            
-            <div className="stat-item">
-              <div className="stat-value">{stats.topArtists.length}</div>
-              <div className="stat-label">
-                {user?.preferences?.language === 'en' ? 'Top Artists' : 'Любими изпълнители'}
-              </div>
-            </div>
-            
-            <div className="stat-item">
-              <div className="stat-value">{stats.topGenres.length}</div>
-              <div className="stat-label">
-                {user?.preferences?.language === 'en' ? 'Genres' : 'Жанрове'}
-              </div>
-            </div>
-            
-            <div className="stat-item">
-              <div className="stat-value">
-                {stats.listeningHours ? Math.max(...stats.listeningHours) : 0}
-              </div>
-              <div className="stat-label">
-                {user?.preferences?.language === 'en' ? 'Peak Hour Plays' : 'Пикови слушания'}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

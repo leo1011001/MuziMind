@@ -82,8 +82,8 @@ export class DataSyncService {
         nowPlayingData = {
           track: {
             name: nowPlaying.name,
-            artist: typeof nowPlaying.artist === 'string' ? nowPlaying.artist : nowPlaying.artist['#text'],
-            album: typeof nowPlaying.album === 'string' ? nowPlaying.album : nowPlaying.album['#text'],
+            artist: typeof nowPlaying.artist === 'string' ? nowPlaying.artist : ((nowPlaying.artist as any)?.name || nowPlaying.artist?.['#text'] || 'Unknown'),
+            album: typeof nowPlaying.album === 'string' ? nowPlaying.album : ((nowPlaying.album as any)?.name || nowPlaying.album?.['#text'] || ''),
             mbid: nowPlaying.mbid,
             url: nowPlaying.url,
             image: imageUrl
@@ -147,9 +147,7 @@ export class DataSyncService {
       userId: new ObjectId(userId),
       artist
     });
-    
     if (existingStats) {
-      // Update existing
       await db.artistStats.updateOne(
         { _id: existingStats._id },
         {
@@ -159,83 +157,96 @@ export class DataSyncService {
         }
       );
     } else {
-      // Create new
       const artistStats: Omit<ArtistStats, '_id'> = {
         userId: new ObjectId(userId),
         artist,
         playCount: 1,
         firstPlayed: new Date(),
         lastPlayed: new Date(),
-        genres: [],
         tags: [],
         lovedTracks: [trackName]
       };
-      
       await db.artistStats.insertOne(artistStats as ArtistStats);
     }
   }
   
   private async updateUserStats(userId: string): Promise<void> {
-    const [totalScrobbles, totalArtists, totalGenres] = await Promise.all([
+    const [totalScrobbles, totalArtists] = await Promise.all([
       db.scrobbles.countDocuments({ userId: new ObjectId(userId) }),
-      db.artistStats.countDocuments({ userId: new ObjectId(userId) }),
-      db.genreStats.countDocuments({ userId: new ObjectId(userId) })
+      db.artistStats.countDocuments({ userId: new ObjectId(userId) })
     ]);
-    
+    // Calculate unique tags
+    const artistStats = await db.artistStats.find({ userId: new ObjectId(userId) }).toArray();
+    const tagSet = new Set<string>();
+    artistStats.forEach(a => a.tags?.forEach(tag => tagSet.add(tag)));
+    const totalTags = tagSet.size;
     await db.updateUser(userId.toString(), {
       stats: {
         totalScrobbles,
         totalArtists,
-        totalGenres
+        totalTags
       }
     });
   }
   
   async getUserListeningData(userId: string) {
-    const [scrobbles, topArtists, user] = await Promise.all([
-      db.getRecentScrobbles(userId, 100),
+    const [scrobbles, topArtistsRaw, user] = await Promise.all([
+      db.getRecentScrobbles(userId, 500),
       db.artistStats
-        .find({ userId: new ObjectId(userId) })
+        .find({ userId: new ObjectId(userId), artist: { $exists: true, $ne: '' } })
         .sort({ playCount: -1 })
         .limit(10)
         .toArray(),
       db.findUserById(userId)
     ]);
-    
+    const topArtists = topArtistsRaw.filter(a => a.artist && a.artist.trim() !== '');
     // Calculate listening hours
     const listeningHours = Array(24).fill(0);
     scrobbles.forEach(scrobble => {
       const hour = scrobble.timestamp.getHours();
       listeningHours[hour]++;
     });
-    
-    // Calculate top genres (simplified - would need genre data)
-    const topGenres = await this.calculateTopGenres(userId);
-    
+    // Aggregate top songs from scrobble history
+    const songMap: Record<string, { name: string; artist: string; playCount: number }> = {};
+    scrobbles.forEach(scrobble => {
+      const key = `${scrobble.track.artist}|||${scrobble.track.name}`;
+      if (!songMap[key]) {
+        songMap[key] = { name: scrobble.track.name, artist: scrobble.track.artist, playCount: 0 };
+      }
+      songMap[key].playCount++;
+    });
+    let topSongs = Object.values(songMap)
+      .sort((a, b) => b.playCount - a.playCount)
+      .slice(0, 10);
+    // If no scrobbles in DB, fallback to Last.fm API top tracks
+    if (topSongs.length === 0 && user?.lastfmUsername) {
+      try {
+        const { lastFMService } = await import('./lastfm');
+        const topTracksResp = await lastFMService.getTopTracks(user.lastfmUsername, '7day', 10);
+        const tracks = topTracksResp?.toptracks?.track || [];
+        topSongs = tracks.map((t: any) => ({
+          name: t.name,
+          artist: typeof t.artist === 'string' ? t.artist : t.artist?.name || t.artist?.['#text'] || 'Unknown',
+          playCount: parseInt(t.playcount, 10) || 0
+        }));
+      } catch (e) {
+        console.log('Last.fm top tracks fallback failed:', e);
+      }
+    }
     return {
       totalScrobbles: user?.stats?.totalScrobbles || 0,
       topArtists: topArtists.map(a => ({
         name: a.artist,
         playCount: a.playCount
       })),
-      topGenres,
+      topSongs,
+      topTags: [],
       listeningHours,
       recentScrobbles: scrobbles.slice(0, 20)
     };
   }
   
-  private async calculateTopGenres(userId: string): Promise<Array<{name: string, playCount: number}>> {
-    const genres = await db.genreStats
-      .find({ userId: new ObjectId(userId) })
-      .sort({ playCount: -1 })
-      .limit(5)
-      .toArray();
-    
-    return genres.map(g => ({
-      name: g.genre,
-      playCount: g.playCount
-    }));
-  }
+  // calculateTopGenres removed. Use tags from ArtistStats instead.
 }
 
 export const syncService = new DataSyncService();
@@ -286,7 +297,7 @@ export const syncService = new DataSyncService();
   // Analyze listening pattern
   const totalListenings = stats.totalScrobbles || 0;
   const avgListeningsPerHour = totalListenings / 24;
-  const topGenre = stats.topGenres?.[0]?.name || 'diverse';
+  const topGenre = stats.topGenres?.[0]?.name || 'смесена музика';
   const topArtist = recommendedArtists[0]?.name || 'unknown';
   
   // Calculate listening intensity
@@ -328,16 +339,46 @@ export const syncService = new DataSyncService();
   // Create personalized daily prediction message
   let dailyPrediction = '';
   
+  // Pick a random variation to avoid repetitive feel
+  const rand = Math.floor(Math.random() * 3);
+  const secondArtist = recommendedArtists[1]?.name || topArtist;
+  const thirdArtist = recommendedArtists[2]?.name || secondArtist;
+  
   if (peakHour === currentHour) {
-    dailyPrediction = `${timeEmoji} Сега е твоят ПИКОВ час за слушане! Това е перфектен момент за ${topArtist} или ${topThreeGenres[0]} музика. Наслаждай се!`;
+    const variants = [
+      `🔥 Точно сега е твоят пиков час! Перфектен момент да пуснеш ${topArtist} — твоят #{1} артист. Наслади се на ${topThreeGenres[0]}!`,
+      `⚡ Ей, ${peakHour}:00 ч. е! Обикновено тук слушаш най-много. Какво ще кажеш за ${topArtist} или нещо ново от ${topThreeGenres[0]}?`,
+      `🎯 Уцели пиковия си час! Сега е моментът за любимите ти — ${topArtist}, ${secondArtist} и чист ${topThreeGenres[0]} звук.`
+    ];
+    dailyPrediction = variants[rand];
   } else if (currentHour === secondPeak) {
-    dailyPrediction = `🎯 Това е твоят втори най-активен час (обикновено слушаш много около ${secondPeak}:00). Сега е идеално време за музика - препоръчаме ${topGenre}!`;
+    const variants = [
+      `🎶 Вторият ти най-активен час е тук (${secondPeak}:00 ч.)! Идеален за ${topThreeGenres[0]} и нови открития.`,
+      `💫 Около ${secondPeak}:00 ч. винаги намираш време за музика. Опитай ${secondArtist} или нещо от ${topThreeGenres[0]}.`,
+      `🌟 ${secondPeak}:00 ч. — твоят скрит музикален момент. Препоръка: ${topArtist} с нотка ${topThreeGenres[0]}.`
+    ];
+    dailyPrediction = variants[rand];
   } else if (listeningHours[currentHour] > avgListeningsPerHour * 0.8) {
-    dailyPrediction = `🎵 ${timeContext} обикновено е когато много слушаш. Сега би бил добър момент за ${topThreeGenres[0]} или ${topThreeGenres[1]}. Вкус: ${intensityLevel}!`;
+    const variants = [
+      `🎵 ${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} е силно време за теб. ${topArtist} и ${topThreeGenres[0]} — класическата ти комбинация!`,
+      `🎧 Статистиката показва, че обичаш да слушаш ${timeContext}. Днес пробвай ${secondArtist} за разнообразие!`,
+      `💿 ${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} + ${topThreeGenres[0]} = твоята формула. Но може би ${thirdArtist} ще те изненада?`
+    ];
+    dailyPrediction = variants[rand];
   } else if (listeningHours[peakHour] > 0 && peakHour !== currentHour) {
-    dailyPrediction = `💿 Обикновено слушаш най-много около ${peakHour}:00. Предложение: слушай още ${topArtist} и ${topThreeGenres.join(', ')} ${timeContext}!`;
+    const variants = [
+      `⏰ Пиковият ти час е ${peakHour}:00 ч. — до тогава разгледай ${topArtist} и ${secondArtist} за настроение!`,
+      `🎼 Обикновено около ${peakHour}:00 ч. слушаш най-интензивно. Междувременно, ${topThreeGenres[0]} звучи добре за ${timeContext}.`,
+      `💡 Знаеш ли, че ${peakHour}:00 ч. е твоят музикален връх? Опитай ${topArtist} или артисти подобни на ${secondArtist} сега.`
+    ];
+    dailyPrediction = variants[rand];
   } else {
-    dailyPrediction = `🎧 ${topThreeGenres.length > 0 ? `Днес е добър ден за ${topThreeGenres[0]}` : 'Днес е добър ден за музика'}. Твоята музикална дейност е ${intensityLevel}. Насладиха й ${currentDay}!`;
+    const variants = [
+      `🎧 Добър ${currentDay} за музика! Предложение: ${topArtist} и ${topThreeGenres[0]} за перфектен саундтрак.`,
+      `🎵 ${currentDay} — ден за открития. Започни с ${topArtist}, после виж какво крие ${topThreeGenres[0]}.`,
+      `💿 Нов ден, нова музика! ${topArtist} е вечна класика, но ${thirdArtist} може да стане нов фаворит.`
+    ];
+    dailyPrediction = variants[rand];
   }
 
   // Calculate listening patterns
@@ -350,7 +391,8 @@ export const syncService = new DataSyncService();
   let enhancedPrediction = dailyPrediction;
   if (currentlyPlaying) {
     const currentTrack = currentlyPlaying.track;
-    enhancedPrediction += ` \n🎶 Сега слушаш: "${currentTrack.name}" от ${currentTrack.artist}`;
+    const artistDisplay = currentTrack.artist || 'Unknown';
+    enhancedPrediction += ` \n🎶 Сега слушаш: "${currentTrack.name}" от ${artistDisplay}`;
   }
   
   return {

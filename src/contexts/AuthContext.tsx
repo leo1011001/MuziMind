@@ -7,6 +7,7 @@ interface User {
   username: string;
   email: string;
   lastfmUsername?: string;
+  role?: 'user' | 'admin';
   preferences: {
     language: 'bg' | 'en';
     theme: 'light' | 'dark';

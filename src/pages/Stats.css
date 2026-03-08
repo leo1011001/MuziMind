@@ -164,6 +164,29 @@
   transition: all 0.3s ease;
 }
 
+.stats-lists-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .stats-lists-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.top-list.scrollable {
+  max-height: none;
+}
+
+.no-data {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.9rem;
+  padding: 1rem;
+}
+
 .genre-tag:hover {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
   transform: scale(1.05);

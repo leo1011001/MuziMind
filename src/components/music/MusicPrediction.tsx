@@ -1,9 +1,35 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './MusicComponents.css';
+
+interface PredictionData {
+  dailyPrediction: string;
+  recommendedArtists: Array<{ name: string; score: number }>;
+  peakHour: number;
+  topGenres: string[];
+  topArtist: string;
+  totalScrobbles: number;
+  intensityLevel: string;
+  currentTimeContext: { hour: number; period: string; emoji: string };
+  listeningPatterns: { morning: number; afternoon: number; evening: number; night: number };
+}
+
+const intensityLabels: Record<string, string> = {
+  passionate: 'Страстен слушател',
+  active: 'Активен слушател',
+  regular: 'Слушател',
+};
+
+const intensityEmojis: Record<string, string> = {
+  passionate: '🔥',
+  active: '⚡',
+  regular: '🎧',
+};
 
 export const MusicPrediction: React.FC = () => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-  const [prediction, setPrediction] = useState<any | null>(null);
+  const navigate = useNavigate();
+  const [prediction, setPrediction] = useState<PredictionData | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,9 +45,6 @@ export const MusicPrediction: React.FC = () => {
       if (res.ok) {
         const json = await res.json();
         setPrediction(json);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        console.warn('Prediction fetch failed', err);
       }
     } catch (e) {
       console.error('Error fetching prediction', e);
@@ -30,19 +53,77 @@ export const MusicPrediction: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="glass-card">Генерирам вашата ежедневна прогноза...</div>;
-  if (!prediction) return <div className="glass-card">Няма прогнозни данни.</div>;
+  if (loading) {
+    return (
+      <div className="glass-card music-prediction">
+        <div className="prediction-header">
+          <h3>🔮 Дневна прогноза</h3>
+        </div>
+        <div className="prediction-loading">
+          <div className="loading-spinner"></div>
+          <p>Генерирам вашата прогноза...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!prediction) {
+    return (
+      <div className="glass-card music-prediction">
+        <div className="prediction-header">
+          <h3>🔮 Дневна прогноза</h3>
+        </div>
+        <p className="prediction-empty">Няма налични данни за прогноза.</p>
+      </div>
+    );
+  }
+
+  const intensityLabel = intensityLabels[prediction.intensityLevel] || 'Слушател';
+  const intensityEmoji = intensityEmojis[prediction.intensityLevel] || '🎧';
+  const ctx = prediction.currentTimeContext;
 
   return (
     <div className="glass-card music-prediction">
-      <h3>🔮 Дневна прогноза</h3>
-      <p>{prediction.dailyPrediction}</p>
-      <h4>Препоръчани артисти</h4>
-      <ul>
-        {prediction.recommendedArtists?.map((a: any, i: number) => (
-          <li key={i}>{a.name} ({a.score})</li>
-        ))}
-      </ul>
+      <div className="prediction-header">
+        <div className="prediction-header-left">
+          <h3>🔮 Дневна прогноза</h3>
+          <span className="prediction-time-badge">
+            {ctx?.emoji} {ctx?.period}
+          </span>
+        </div>
+        <div className="intensity-badge" title={intensityLabel}>
+          <span>{intensityEmoji}</span>
+          <span>{intensityLabel}</span>
+        </div>
+      </div>
+
+      <div className="prediction-body">
+        <p className="prediction-message">{prediction.dailyPrediction}</p>
+      </div>
+
+      {prediction.recommendedArtists && prediction.recommendedArtists.length > 0 && (
+        <div className="prediction-artists">
+          <h4>🎤 Препоръчани артисти</h4>
+          <div className="prediction-artists-list">
+            {prediction.recommendedArtists.map((a, i) => (
+              <div key={i} className="prediction-artist-item">
+                <div className="prediction-artist-rank">#{i + 1}</div>
+                <div className="prediction-artist-name">{a.name}</div>
+                <div className="prediction-artist-score">{a.score} слушания</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="prediction-footer">
+        <div className="prediction-peak">
+          ⏰ Пиков час: <strong>{prediction.peakHour}:00 ч.</strong>
+        </div>
+        <button className="glass-button prediction-expand-btn" onClick={() => navigate('/recommendations-expanded')}>
+          Виж повече →
+        </button>
+      </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import Login from "./pages/Login/Login.tsx"
 import { StatsPage } from "./pages/StatsExpanded.tsx"
 import { RecommendationsExpanded } from "./pages/RecommendationsExpanded.tsx"
 import { AboutPage } from "./pages/About.tsx"
+import Admin from "./pages/Admin/Admin.tsx"
 import { Navigation } from "./components/ui/Navigation/Navigation.tsx"
 import "./styles/glass.css"
 
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/recommendations-expanded" element={<RecommendationsExpanded />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
           </Routes>
         </main>

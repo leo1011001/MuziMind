@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaHandSparkles, FaArrowLeft, FaMusic, FaClock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './Recommendations.css';
+
+const intensityLabels: Record<string, string> = {
+  passionate: 'Страстен слушател',
+  active: 'Активен слушател',
+  regular: 'Слушател',
+};
+
+const intensityEmojis: Record<string, string> = {
+  passionate: '🔥',
+  active: '⚡',
+  regular: '🎧',
+};
 
 export const RecommendationsExpanded: React.FC = () => {
   const { user } = useAuth();
@@ -33,51 +44,119 @@ export const RecommendationsExpanded: React.FC = () => {
   }, [user]);
 
   if (!user) {
-    return <div className="page-container"><p>Моля, влезте в системата</p></div>;
+    return (
+      <div className="page-container recommendations-page">
+        <p className="auth-prompt">Моля, влезте в системата</p>
+      </div>
+    );
   }
 
   if (loading) {
-    return <div className="page-container"><p>Генериране на персонализирани препоръки...</p></div>;
+    return (
+      <div className="page-container recommendations-page">
+        <div className="rec-loading">
+          <div className="rec-loading-spinner"></div>
+          <p>Генериране на персонализирани препоръки...</p>
+        </div>
+      </div>
+    );
   }
+
+  const ctx = prediction?.currentTimeContext;
+  const patterns = prediction?.listeningPatterns;
+  const intensityLabel = intensityLabels[prediction?.intensityLevel] || 'Слушател';
+  const intensityEmoji = intensityEmojis[prediction?.intensityLevel] || '🎧';
 
   return (
     <div className="page-container recommendations-page">
-      <div className="page-header">
-        <button className="back-btn" onClick={() => navigate('/')}>
-          <FaArrowLeft /> Назад
+      <div className="rec-header">
+        <button className="glass-button back-btn" onClick={() => navigate('/')}>
+          ← Назад към начало
         </button>
-        <h1><FaHandSparkles /> Твоя дневна прогноза</h1>
+        <h1>🔮 Твоя дневна прогноза</h1>
+        {ctx && (
+          <div className="rec-time-info">
+            {ctx.emoji} {ctx.period} · {intensityEmoji} {intensityLabel}
+          </div>
+        )}
       </div>
 
       {prediction && (
-        <>
-          <div className="prediction-card featured">
-            <div className="card-icon"><FaHandSparkles /></div>
+        <div className="rec-content">
+          {/* Prediction Card */}
+          <div className="glass-card rec-prediction-card">
+            <div className="rec-prediction-icon">🔮</div>
             <h2>Дневна прогноза</h2>
-            <p className="prediction-text">{prediction.dailyPrediction}</p>
+            <p className="rec-prediction-text">{prediction.dailyPrediction}</p>
           </div>
 
-          <div className="section peak-hour">
-            <h2><FaClock /> Твой пиков час</h2>
-            <div className="peak-display">
-              <div className="peak-time">{prediction.peakHour}:00</div>
-              <p>Това е часът на дня, когато обикновено слушаш най-много музика</p>
+          {/* Peak Hour */}
+          <div className="glass-card rec-peak-section">
+            <h2>⏰ Твой пиков час</h2>
+            <div className="rec-peak-display">
+              <div className="rec-peak-time">{prediction.peakHour}:00 ч.</div>
+              <p>Това е часът, когато обикновено слушаш най-много музика</p>
+              {prediction.secondPeak !== undefined && prediction.secondPeak !== prediction.peakHour && (
+                <p className="rec-second-peak">Втори пиков час: {prediction.secondPeak}:00 ч.</p>
+              )}
             </div>
           </div>
 
-          <div className="section recommendations">
-            <h2><FaMusic /> Препоръчани артисти</h2>
-            <div className="artist-grid">
+          {/* Listening Patterns */}
+          {patterns && (
+            <div className="glass-card rec-patterns-section">
+              <h2>📊 Модел на слушане</h2>
+              <div className="rec-patterns-grid">
+                <div className="rec-pattern-item">
+                  <span className="rec-pattern-emoji">🌅</span>
+                  <span className="rec-pattern-label">Сутрин</span>
+                  <span className="rec-pattern-value">{patterns.morning}</span>
+                </div>
+                <div className="rec-pattern-item">
+                  <span className="rec-pattern-emoji">☀️</span>
+                  <span className="rec-pattern-label">Следобед</span>
+                  <span className="rec-pattern-value">{patterns.afternoon}</span>
+                </div>
+                <div className="rec-pattern-item">
+                  <span className="rec-pattern-emoji">🌆</span>
+                  <span className="rec-pattern-label">Вечер</span>
+                  <span className="rec-pattern-value">{patterns.evening}</span>
+                </div>
+                <div className="rec-pattern-item">
+                  <span className="rec-pattern-emoji">🌃</span>
+                  <span className="rec-pattern-label">Нощ</span>
+                  <span className="rec-pattern-value">{patterns.night}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recommended Artists */}
+          <div className="glass-card rec-artists-section">
+            <h2>🎤 Препоръчани артисти</h2>
+            <div className="rec-artist-grid">
               {prediction.recommendedArtists?.map((artist: any, i: number) => (
-                <div key={i} className="artist-card">
-                  <div className="artist-rank">#{i + 1}</div>
-                  <div className="artist-name">{artist.name}</div>
-                  <div className="artist-score">Оценка: {artist.score}</div>
+                <div key={i} className="rec-artist-card">
+                  <div className="rec-artist-rank">#{i + 1}</div>
+                  <div className="rec-artist-name">{artist.name}</div>
+                  <div className="rec-artist-score">{artist.score} слушания</div>
                 </div>
               ))}
             </div>
           </div>
-        </>
+
+          {/* Top Genres */}
+          {prediction.topGenres && prediction.topGenres.length > 0 && (
+            <div className="glass-card rec-genres-section">
+              <h2>🎶 Любими жанрове</h2>
+              <div className="rec-genres-list">
+                {prediction.topGenres.map((genre: string, i: number) => (
+                  <span key={i} className="rec-genre-tag">{genre}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

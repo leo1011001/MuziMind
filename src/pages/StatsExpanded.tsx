@@ -64,12 +64,6 @@ export const StatsPage: React.FC = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon"><FaMusic /></div>
-            <div className="stat-value">{stats.topGenres?.length || 0}</div>
-            <div className="stat-label">Жанрове</div>
-          </div>
-
-          <div className="stat-card">
             <div className="stat-icon"><FaFire /></div>
             <div className="stat-value">{Math.max(...(stats.listeningHours || []))}h</div>
             <div className="stat-label">Пиков час</div>
@@ -77,29 +71,39 @@ export const StatsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="stats-section">
-        <h2>Топ артисти</h2>
-        <div className="top-list">
-          {stats?.topArtists?.map((artist: any, i: number) => (
-            <div key={i} className="list-item">
-              <div className="rank">{i + 1}</div>
-              <div className="info">
-                <div className="name">{artist.name}</div>
-                <div className="count">{artist.playCount} слушания</div>
+      <div className="stats-lists-grid">
+        <div className="stats-section">
+          <h2><FaTrophy /> Топ артисти</h2>
+          <div className="top-list scrollable">
+            {stats?.topArtists?.map((artist: any, i: number) => (
+              <div key={i} className="list-item">
+                <div className="rank">{i + 1}</div>
+                <div className="info">
+                  <div className="name">{artist.name}</div>
+                  <div className="count">{artist.playCount} слушания</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="stats-section">
-        <h2>Жанрове</h2>
-        <div className="genre-cloud">
-          {stats?.topGenres?.map((genre: any, i: number) => (
-            <div key={i} className="genre-tag" style={{ fontSize: `${12 + (genre.playCount % 8)}px` }}>
-              {genre.name}
-            </div>
-          ))}
+        <div className="stats-section">
+          <h2><FaMusic /> Топ песни</h2>
+          <div className="top-list scrollable">
+            {stats?.topSongs && stats.topSongs.length > 0 ? (
+              stats.topSongs.map((song: any, i: number) => (
+                <div key={i} className="list-item">
+                  <div className="rank">{i + 1}</div>
+                  <div className="info">
+                    <div className="name">{song.name}</div>
+                    <div className="count">{song.artist} · {song.playCount} слушания</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="no-data">Няма данни за песни</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

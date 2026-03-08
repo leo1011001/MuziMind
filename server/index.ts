@@ -50,6 +50,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Fix: Ensure JSON body parsing is enabled before routes
+import bodyParser from 'body-parser';
+app.use(bodyParser.json());
 app.use(express.json());
 
 app.use(session({
@@ -308,6 +311,118 @@ app.get('/api/now-playing', requireAuth, async (req, res) => {
   }
 });
 
+// Get user profile
+app.get('/api/profile', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const user = await db.findUserById(userId);
+    if (!user) return res.status(404).json({ error: 'Потребител не е намерен' });
+    res.json({
+      username: user.username,
+      email: user.email,
+      lastfmUsername: user.lastfmUsername || '',
+      role: user.role || 'user',
+      createdAt: user.createdAt,
+      profile: user.profile || {},
+      stats: user.stats || {}
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Update user profile
+app.put('/api/profile', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+
+    const { bio, pronouns, nationality, gender } = req.body;
+    const profile: Record<string, string> = {};
+    if (typeof bio === 'string') profile.bio = bio.slice(0, 500);
+    if (typeof pronouns === 'string') profile.pronouns = pronouns.slice(0, 50);
+    if (typeof nationality === 'string') profile.nationality = nationality.slice(0, 100);
+    if (typeof gender === 'string') profile.gender = gender.slice(0, 50);
+
+    await db.updateUser(userId, { profile } as any);
+    res.json({ success: true, profile });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Admin: list all users
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const admin = await db.findUserById(userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Нямате права за тази операция' });
+    }
+    const users = await db.users.find({}).project({ passwordHash: 0 }).toArray();
+    res.json(users);
+  } catch (error) {
+    console.error('Admin list users error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Admin: update user (approve, set role, verify, delete)
+app.put('/api/admin/users/:id', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const admin = await db.findUserById(userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Нямате права за тази операция' });
+    }
+
+    const targetId = String(req.params.id);
+    const { role, approved, verified } = req.body;
+    const updates: Record<string, any> = {};
+    if (role === 'user' || role === 'admin') updates.role = role;
+    if (typeof approved === 'boolean') updates.approved = approved;
+    if (typeof verified === 'boolean') updates.verified = verified;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Няма промени за прилагане' });
+    }
+
+    await db.updateUser(targetId, updates as any);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Admin update user error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Admin: delete user
+app.delete('/api/admin/users/:id', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const admin = await db.findUserById(userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Нямате права за тази операция' });
+    }
+
+    const targetId = String(req.params.id);
+    // Prevent self-deletion
+    if (targetId === userId) {
+      return res.status(400).json({ error: 'Не можете да изтриете собствения си акаунт' });
+    }
+    await db.users.deleteOne({ _id: new ObjectId(targetId) });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Admin delete user error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
 // Update preferences
 app.put('/api/preferences', requireAuth, async (req, res) => {
   try {
@@ -358,6 +473,125 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(join(__dirname, '../dist/index.html'));
   });
 }
+
+// Get latest reading
+app.get('/api/reading/latest', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const reading = await db.getLatestReading(userId);
+    if (!reading) {
+      return res.status(404).json({ error: 'No reading found' });
+    }
+
+    // Return in the shape the frontend expects
+    res.json({
+      content: reading.content?.bg || reading.content?.en || '',
+      mood: reading.content?.mood || 'balanced',
+      date: reading.date?.toISOString() || new Date().toISOString(),
+      recommendations: reading.content?.recommendations || []
+    });
+  } catch (error) {
+    console.error('Get reading error:', error);
+    res.status(500).json({ error: 'Error fetching reading' });
+  }
+});
+
+// Generate new reading using real Last.fm data
+app.post('/api/reading/generate', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const user = await db.findUserById(userId);
+    if (!user?.lastfmUsername) {
+      return res.status(400).json({ error: 'No Last.fm account connected' });
+    }
+
+    // Fetch real data from Last.fm
+    const [topArtistsResp, topTracksResp] = await Promise.all([
+      lastFMService.getTopArtists(user.lastfmUsername, '7day', 5),
+      lastFMService.getTopTracks(user.lastfmUsername, '7day', 10)
+    ]);
+
+    const topArtists = (topArtistsResp?.topartists?.artist || []).slice(0, 5);
+    const topTracks = (topTracksResp?.toptracks?.track || []).slice(0, 10);
+
+    // Build recommendations from top tracks
+    const recommendations: Array<{artist: string; track: string; reason: string}> = [];
+    for (const t of topTracks.slice(0, 3)) {
+      const artistName = typeof t.artist === 'string' ? t.artist : (t.artist?.name || t.artist?.['#text'] || 'Unknown');
+      recommendations.push({
+        artist: artistName,
+        track: t.name,
+        reason: 'Топ песен от любим артист'
+      });
+    }
+
+    // Add similar artists
+    for (const artist of topArtists.slice(0, 3)) {
+      try {
+        const similarResp = await lastFMService.getSimilarArtists(artist.name, 3);
+        if (similarResp?.similarartists?.artist && Array.isArray(similarResp.similarartists.artist)) {
+          for (const sim of similarResp.similarartists.artist.slice(0, 1)) {
+            recommendations.push({
+              artist: sim.name,
+              track: '',
+              reason: `Подобен на ${artist.name}`
+            });
+          }
+        }
+      } catch (e) {
+        // Skip if similar artists fails
+      }
+    }
+
+    // Detect mood from listening patterns
+    const topArtistNames = topArtists.map((a: any) => a.name).join(', ');
+    const totalPlaycount = topTracks.reduce((sum: number, t: any) => sum + parseInt(t.playcount || '0'), 0);
+    let mood = 'balanced';
+    if (totalPlaycount > 100) mood = 'energetic';
+    else if (totalPlaycount > 50) mood = 'focused';
+    else if (topArtists.length <= 2) mood = 'nostalgic';
+    else if (topArtists.length >= 5) mood = 'adventurous';
+
+    const content = `🎵 Днес твоят музикален свят се върти около ${topArtistNames}.\n\nС ${totalPlaycount} слушания тази седмица, виждам страст и отдаденост към музиката. Продължавай да откриваш нови звуци!\n\n🎶 Музикална мъдрост за днес: Всяка песен е врата към нов свят.`;
+
+    // Store in DB
+    const { ObjectId: ObjId } = await import('mongodb');
+    await db.addReading({
+      userId: new ObjId(userId),
+      date: new Date(),
+      type: 'daily',
+      content: {
+        bg: content,
+        en: '',
+        mood,
+        dominantGenre: topArtists[0]?.name || 'Unknown',
+        recommendations: recommendations.slice(0, 6)
+      },
+      statsSnapshot: {
+        totalScrobbles: totalPlaycount,
+        topArtists: topArtists.map((a: any) => a.name),
+        topGenres: [],
+        discoveryRate: topArtists.length / 5,
+        listeningHours: Array(24).fill(0)
+      },
+      viewed: false
+    });
+
+    res.json({
+      content,
+      mood,
+      date: new Date().toISOString(),
+      recommendations: recommendations.slice(0, 6)
+    });
+  } catch (error) {
+    console.error('Generate reading error:', error);
+    res.status(500).json({ error: 'Error generating reading' });
+  }
+});
 
 // Prediction endpoint (simple)
 app.get('/api/predict', requireAuth, async (req, res) => {

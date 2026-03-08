@@ -3,8 +3,7 @@ import type {
   User, 
   Scrobble, 
   Reading, 
-  ArtistStats, 
-  GenreStats 
+  ArtistStats 
 } from '../models/index.ts';
 import { COLLECTIONS } from '../models/index.ts';
 
@@ -64,9 +63,7 @@ class DatabaseService {
         { key: { userId: 1, artist: 1 }, unique: true }
       ]);
       
-      await this.db.collection(COLLECTIONS.GENRE_STATS).createIndexes([
-        { key: { userId: 1, genre: 1 }, unique: true }
-      ]);
+      // GenreStats collection removed. Use tags from ArtistStats instead.
       
       await this.db.collection(COLLECTIONS.USERS).createIndexes([
         { key: { email: 1 }, unique: true },
@@ -105,10 +102,7 @@ class DatabaseService {
     return this.db.collection(COLLECTIONS.ARTIST_STATS);
   }
   
-  get genreStats(): Collection<GenreStats> {
-    if (!this.db) throw new Error('Database not connected. Call connect() first.');
-    return this.db.collection(COLLECTIONS.GENRE_STATS);
-  }
+  // genreStats collection removed. Use tags from ArtistStats instead.
 
   get trackHistory(): Collection<any> {
     if (!this.db) throw new Error('Database not connected. Call connect() first.');
@@ -183,13 +177,16 @@ class DatabaseService {
   }
   
   async getUserStats(userId: string) {
-    const [totalScrobbles, totalArtists, totalGenres] = await Promise.all([
+    const [totalScrobbles, totalArtists] = await Promise.all([
       this.scrobbles.countDocuments({ userId: new ObjectId(userId) }),
-      this.artistStats.countDocuments({ userId: new ObjectId(userId) }),
-      this.genreStats.countDocuments({ userId: new ObjectId(userId) })
+      this.artistStats.countDocuments({ userId: new ObjectId(userId) })
     ]);
-    
-    return { totalScrobbles, totalArtists, totalGenres };
+    // Calculate unique tags
+    const artistStats = await this.artistStats.find({ userId: new ObjectId(userId) }).toArray();
+    const tagSet = new Set<string>();
+    artistStats.forEach(a => a.tags?.forEach(tag => tagSet.add(tag)));
+    const totalTags = tagSet.size;
+    return { totalScrobbles, totalArtists, totalTags };
   }
   
   async disconnect(): Promise<void> {

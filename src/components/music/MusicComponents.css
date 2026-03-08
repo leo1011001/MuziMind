@@ -612,3 +612,162 @@
   color: rgba(255, 255, 255, 0.6);
   padding: 2rem;
 }
+
+/* Music Prediction Component */
+.music-prediction {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.prediction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.prediction-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.prediction-header h3,
+.prediction-header-left h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.prediction-time-badge {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.intensity-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.prediction-body {
+  padding: 1rem 1.2rem;
+  background: rgba(30, 60, 120, 0.07);
+  border-radius: 12px;
+  line-height: 1.7;
+}
+
+.prediction-message {
+  margin: 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-line;
+}
+
+.prediction-loading {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.prediction-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(180, 160, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.prediction-loading p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+.prediction-empty {
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.prediction-artists h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.prediction-artists-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.prediction-artist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.prediction-artist-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(4px);
+}
+
+.prediction-artist-rank {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: rgba(99, 102, 241, 0.9);
+  min-width: 28px;
+}
+
+.prediction-artist-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.prediction-artist-score {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prediction-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prediction-peak {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.prediction-peak strong {
+  color: #fff;
+}
+
+.prediction-expand-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

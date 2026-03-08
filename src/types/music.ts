@@ -16,5 +16,5 @@ export type ListeningStats = {
   uniqueTracks: number
   repeatRatio: number
   topArtistsShare: number
-  uniqueGenres: number
+  uniqueTags: number
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic, FaUser, FaBars, FaTimes } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic, FaUser, FaBars, FaTimes, FaShieldAlt } from 'react-icons/fa';
 import '../UI.css';
 
 export const Navigation: React.FC = () => {
@@ -50,6 +50,12 @@ export const Navigation: React.FC = () => {
               <Link to="/profile" className="nav-link">
                 <FaUser /> Профил
               </Link>
+
+              {user.role === 'admin' && (
+                <Link to="/admin" className="nav-link">
+                  <FaShieldAlt /> Админ
+                </Link>
+              )}
             </>
           )}
 
