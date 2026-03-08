@@ -1,5 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ReadingComponents.css';
+import HappyIcon from '../../../assets/icons/happy.svg?react';
+import NostalgicIcon from '../../../assets/icons/nostalgic.svg?react';
+import EnergeticIcon from '../../../assets/icons/energetic.svg?react';
+import CalmIcon from '../../../assets/icons/calm.svg?react';
+import AdventurousIcon from '../../../assets/icons/adventurous.svg?react';
+import RomanticIcon from '../../../assets/icons/romantic.svg?react';
+import FocusedIcon from '../../../assets/icons/focused.svg?react';
+import MelancholicIcon from '../../../assets/icons/melancholic.svg?react';
+import MysteriousIcon from '../../../assets/icons/mysterious.svg?react';
+import CreativeIcon from '../../../assets/icons/creative.svg?react';
+
+
 
 interface DailyReadingProps {
   userId: string;
@@ -17,17 +29,17 @@ interface ReadingData {
   }>;
 }
 
-const moodEmoji: Record<string, string> = {
-  happy: '😊',
-  nostalgic: '🕰️',
-  energetic: '⚡',
-  calm: '☁️',
-  adventurous: '🧭',
-  romantic: '💖',
-  focused: '🎯',
-  melancholic: '🌧️',
-  mysterious: '🔮',
-  creative: '🎨',
+const moodIcons: Record<string, React.ReactElement> = {
+  happy: <HappyIcon />,
+  nostalgic: <NostalgicIcon />,
+  energetic: <EnergeticIcon />,
+  calm: <CalmIcon />,
+  adventurous: <AdventurousIcon />,
+  romantic: <RomanticIcon />,
+  focused: <FocusedIcon />,
+  melancholic: <MelancholicIcon />,
+  mysterious: <MysteriousIcon />,
+  creative: <CreativeIcon />,
 };
 
 const moodColors: Record<string, string> = {
@@ -64,49 +76,18 @@ export function DailyReading({ userId, language = 'bg' }: DailyReadingProps) {
 
   useEffect(() => {
     fetchReading();
-  }, [userId]);
+    // eslint-disable-next-line
+  }, [userId, language]);
 
   const fetchReading = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // In a real app, this would fetch from your API
-      // For now, we'll use mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockReading: ReadingData = {
-        content: language === 'bg'
-          ? 'Здравей, музикален алхимиче! 🎵 Виждам, че тази седмица си се отдал/а на класически рок с нотка носталгия. Твоите слушания разказват история за дълбоки корени и уважение към музикалните легенди. Все едно слушаш винилова плоча в стара книжарница докато вали навън. ✨\n\nТвоят музикален вкус наподобява мъдър архивар, който пази скъпоценни реликви. Харесваш да задълбаваш в творби, които са издържали проверката на времето. Това не е просто слушане, а ритуал на почит към изкуството.\n\n🎶 **Музикална мъдрост за деня:** Понякога най-старите мелодии носят най-свежите емоции.'
-          : 'Hello, musical alchemist! 🎵 I see you\'ve been diving into classic rock with a touch of nostalgia this week. Your listening patterns tell a story of deep roots and respect for musical legends. It\'s like listening to a vinyl record in an old bookstore while it rains outside. ✨\n\nYour musical taste resembles a wise archivist who preserves precious relics. You enjoy delving into works that have stood the test of time. This isn\'t just listening—it\'s a ritual of homage to art.\n\n🎶 **Musical Wisdom for Today:** Sometimes the oldest melodies carry the freshest emotions.',
-        mood: 'nostalgic',
-        date: new Date().toISOString(),
-        recommendations: [
-          {
-            artist: 'Pink Floyd',
-            track: 'Wish You Were Here',
-            reason: language === 'bg'
-              ? 'Перфектна комбинация от класически рок и дълбоки емоции'
-              : 'Perfect blend of classic rock and deep emotions'
-          },
-          {
-            artist: 'Dire Straits',
-            track: 'Sultans of Swing',
-            reason: language === 'bg'
-              ? 'Майсторски инструментали, които ще оценят истинските познавачи'
-              : 'Masterful instrumentation that true connoisseurs will appreciate'
-          },
-          {
-            artist: 'Fleetwood Mac',
-            track: 'Dreams',
-            reason: language === 'bg'
-              ? 'Времево доказана класика, която отговаря на твоя вкус'
-              : 'Timeless classic that matches your refined taste'
-          }
-        ]
-      };
-      
-      setReading(mockReading);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const res = await fetch(`${API_URL}/api/reading/latest?userId=${userId}&lang=${language}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch reading');
+      const data = await res.json();
+      setReading(data);
     } catch (err) {
       setError(language === 'bg' 
         ? 'Грешка при зареждане на прочита' 
@@ -122,45 +103,16 @@ export function DailyReading({ userId, language = 'bg' }: DailyReadingProps) {
     try {
       setGenerating(true);
       setError(null);
-      
-      // In a real app, this would call your API to generate a new reading
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const moods = Object.keys(moodEmoji);
-      const randomMood = moods[Math.floor(Math.random() * moods.length)];
-      
-      const newReading: ReadingData = {
-        content: language === 'bg'
-          ? '✨ **Нов прочит!** Твоята музикална аура се е променила! Забелязвам повече разнообразие в избора ти. Изглежда търсиш нови звуци, които да разширят хоризонтите ти. 🎶\n\nТози път си по-скоро изследовател отколкото архивар. Опитваш се да намериш баланс между познатото и новото, което е страхотен признак за музикален растеж.\n\n🎵 **Прогноза:** Тази седмица ще откриеш артист, който ще те изненада приятно!'
-          : '✨ **New Reading!** Your musical aura has shifted! I notice more diversity in your choices. It seems you\'re seeking new sounds to expand your horizons. 🎶\n\nThis time you\'re more of an explorer than an archivist. You\'re trying to find balance between the familiar and the new, which is a great sign of musical growth.\n\n🎵 **Prediction:** This week you\'ll discover an artist that will pleasantly surprise you!',
-        mood: randomMood,
-        date: new Date().toISOString(),
-        recommendations: [
-          {
-            artist: 'Tame Impala',
-            track: 'The Less I Know the Better',
-            reason: language === 'bg'
-              ? 'Модерен звук с винтажни влияния' 
-              : 'Modern sound with vintage influences'
-          },
-          {
-            artist: 'Khruangbin',
-            track: 'White Gloves',
-            reason: language === 'bg'
-              ? 'Инструментално майсторство с международен вкус'
-              : 'Instrumental mastery with international flavor'
-          },
-          {
-            artist: 'Lana Del Rey',
-            track: 'Video Games',
-            reason: language === 'bg'
-              ? 'Носталгичен поп, който отговаря на твоя вкус'
-              : 'Nostalgic pop that matches your taste'
-          }
-        ]
-      };
-      
-      setReading(newReading);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const res = await fetch(`${API_URL}/api/reading/generate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, language })
+      });
+      if (!res.ok) throw new Error('Failed to generate reading');
+      const data = await res.json();
+      setReading(data);
     } catch (err) {
       setError(language === 'bg'
         ? 'Грешка при генериране на прочит'
@@ -232,13 +184,13 @@ export function DailyReading({ userId, language = 'bg' }: DailyReadingProps) {
 
   const moodLabel = moodLabels[reading.mood]?.[language] || reading.mood;
   const moodColor = moodColors[reading.mood] || 'rgba(180, 160, 255, 0.2)';
-  const moodIcon = moodEmoji[reading.mood] || '🎵';
+  const moodIcon = moodIcons[reading.mood] || <CreativeIcon />;
 
   return (
     <div className="glass-card daily-reading">
       <div className="reading-header">
         <div className="header-left">
-          <h3>🔮 {language === 'en' ? 'Daily Reading' : 'Дневен прочит'}</h3>
+          <h3>{language === 'en' ? 'Daily Reading' : 'Дневен прочит'}</h3>
           <div className="reading-date">
             {new Date(reading.date).toLocaleDateString(language === 'bg' ? 'bg-BG' : 'en-US', {
               weekday: 'long',
@@ -248,46 +200,47 @@ export function DailyReading({ userId, language = 'bg' }: DailyReadingProps) {
             })}
           </div>
         </div>
-        
         <div 
           className="mood-badge"
           style={{ backgroundColor: moodColor }}
         >
-          <span className="mood-emoji">{moodIcon}</span>
+          <span className="mood-icon">{moodIcon}</span>
           <span className="mood-label">{moodLabel}</span>
         </div>
       </div>
-      
       <div className="reading-content">
-        {reading.content.split('\n\n').map((paragraph, index) => (
-          <p key={index} className="reading-paragraph">
-            {paragraph}
-          </p>
-        ))}
+        <div className="reading-paragraphs">
+          <div className="reading-bg">
+            <div className="reading-bg-art" />
+          </div>
+          {reading.content.split('\n\n').map((paragraph, index) => (
+            <p key={index} className="reading-paragraph">
+              {paragraph}
+            </p>
+          ))}
+        </div>
       </div>
-      
       {reading.recommendations && reading.recommendations.length > 0 && (
         <div className="recommendations-section">
-          <h4>🎵 {language === 'en' ? 'Recommended for you' : 'Препоръчано за теб'}</h4>
+          <h4>{language === 'en' ? 'Recommended for you' : 'Препоръчано за теб'}</h4>
           <div className="recommendations-list">
             {reading.recommendations.map((rec, index) => (
               <div key={index} className="recommendation-item">
                 <div className="recommendation-rank">{index + 1}</div>
                 <div className="recommendation-info">
                   <div className="recommendation-track">
-                    <strong>{rec.track}</strong> by {rec.artist}
+                    <strong>{rec.track}</strong> {language === 'en' ? 'by' : 'от'} {rec.artist}
                   </div>
                   <div className="recommendation-reason">{rec.reason}</div>
                 </div>
                 <button className="listen-btn" title={language === 'en' ? 'Listen' : 'Слушай'}>
-                  ▶
+                  <svg width="20" height="20" viewBox="0 0 20 20"><polygon points="5,3 17,10 5,17" fill="#333" /></svg>
                 </button>
               </div>
             ))}
           </div>
         </div>
       )}
-      
       <div className="reading-footer">
         <button 
           onClick={generateNewReading}
@@ -301,20 +254,20 @@ export function DailyReading({ userId, language = 'bg' }: DailyReadingProps) {
             </>
           ) : (
             <>
-              ✨ {language === 'en' ? 'Generate New Reading' : 'Нов прочит'}
+              <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="#333" strokeWidth="2" fill="none" /><path d="M9 3v6l4 2" stroke="#333" strokeWidth="2" fill="none" /></svg>
+              {language === 'en' ? 'Generate New Reading' : 'Нов прочит'}
             </>
           )}
         </button>
-        
         <div className="reading-actions">
           <button className="action-btn" title={language === 'en' ? 'Save' : 'Запази'}>
-            💾
+            <svg width="18" height="18" viewBox="0 0 18 18"><rect x="3" y="3" width="12" height="12" rx="2" fill="#333" /><rect x="6" y="6" width="6" height="6" fill="#fff" /></svg>
           </button>
           <button className="action-btn" title={language === 'en' ? 'Share' : 'Сподели'}>
-            📤
+            <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" stroke="#333" strokeWidth="2" fill="none" /><path d="M9 5v8M5 9h8" stroke="#333" strokeWidth="2" fill="none" /></svg>
           </button>
           <button className="action-btn" title={language === 'en' ? 'Previous' : 'Предишни'}>
-            📚
+            <svg width="18" height="18" viewBox="0 0 18 18"><polyline points="12,5 7,9 12,13" fill="none" stroke="#333" strokeWidth="2" /></svg>
           </button>
         </div>
       </div>

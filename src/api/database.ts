@@ -8,8 +8,8 @@ import type {
 } from '../models/index.ts';
 import { COLLECTIONS } from '../models/index.ts';
 
-const MONGODB_URI = 'mongodb+srv://schoolmaterialsadmin:b51c6UNnvXszsq3T@cluster0.q0pdxqb.mongodb.net/muzimind?retryWrites=true&w=majority';
-const DB_NAME = 'muzimind';
+const MONGODB_URI = process.env.MONGODB_URI || '';
+const DB_NAME = process.env.DB_NAME || 'muzimind';
 
 class DatabaseService {
   private static instance: DatabaseService;

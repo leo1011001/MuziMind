@@ -4,6 +4,8 @@ import './loadEnv.ts';
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { ObjectId } from 'mongodb';
@@ -26,8 +28,21 @@ import { authService } from '../src/api/auth.ts';
 import { syncService } from '../src/api/sync.ts';
 import { lastFMService } from '../src/api/lastfm.ts';
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Security HTTP headers
+app.use(helmet());
+
+// Rate limiting (basic, not too strict)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // Middleware
 app.use(cors({
@@ -42,8 +57,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));

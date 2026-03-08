@@ -25,29 +25,66 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  padding: 0.5rem 1.2rem;
+  border-radius: 24px;
+  border: 1.5px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255,255,255,0.07);
+  box-shadow: 0 2px 12px 0 rgba(80,40,120,0.08);
+  backdrop-filter: blur(14px);
+  transition: background 0.2s, box-shadow 0.2s;
 }
 
 .mood-emoji {
-  font-size: 1.2rem;
+  display: none;
 }
 
 .mood-label {
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: 0.01em;
+.mood-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 }
 
 .reading-content {
+  position: relative;
   line-height: 1.8;
   color: var(--text-secondary);
+  padding: 1.2rem 1rem 1.2rem 1.5rem;
+  border-radius: 16px;
+  background: rgba(30, 60, 120, 0.07);
+  box-shadow: 0 2px 16px 0 rgba(30,60,120,0.07);
+  overflow: hidden;
+.reading-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.reading-bg-art {
+  width: 100%; height: 100%;
+  background: url('/assets/reading-bg.svg') center/cover no-repeat;
+  opacity: 0.08;
+  filter: blur(2px);
+}
+.reading-paragraphs {
+  position: relative;
+  z-index: 1;
+}
 }
 
 .reading-paragraph {
   margin: 0 0 1.5rem 0;
+  font-size: 1.08rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.07);
 }
 
 .reading-paragraph:last-child {

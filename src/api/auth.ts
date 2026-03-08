@@ -13,29 +13,37 @@ export class AuthService {
     lastfmUsername?: string
   ): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
+      // Basic input validation
+      if (!email || !username || !password) {
+        return { success: false, error: 'Всички полета са задължителни.' };
+      }
+      if (!/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email)) {
+        return { success: false, error: 'Невалиден имейл.' };
+      }
+      if (username.length < 3 || username.length > 20) {
+        return { success: false, error: 'Потребителското име трябва да е между 3 и 20 символа.' };
+      }
+      if (password.length < 6) {
+        return { success: false, error: 'Паролата трябва да е поне 6 символа.' };
+      }
       // Check if user already exists
       const existingEmail = await db.findUserByEmail(email);
       if (existingEmail) {
         return { success: false, error: 'Потребител с този имейл вече съществува' };
       }
-      
       // Check if username is taken
       const existingUsername = await db.users.findOne({ username });
       if (existingUsername) {
         return { success: false, error: 'Потребителското име е заето' };
       }
-      
       // Hash password
       const passwordHash = await bcrypt.hash(password, this.saltRounds);
-      
       // Create user
       const user = createDefaultUser(email, username, passwordHash);
       if (lastfmUsername) {
         user.lastfmUsername = lastfmUsername;
       }
-      
       const userId = await db.createUser(user);
-      
       return { success: true, userId };
     } catch (error) {
       console.error('Registration error:', error);
@@ -48,21 +56,22 @@ export class AuthService {
     password: string
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
+      // Basic input validation
+      if (!email || !password) {
+        return { success: false, error: 'Имейл и парола са задължителни.' };
+      }
       // Find user
       const user = await db.findUserByEmail(email);
       if (!user) {
         return { success: false, error: 'Невалиден имейл или парола' };
       }
-      
       // Check password
       const passwordMatch = await bcrypt.compare(password, user.passwordHash);
       if (!passwordMatch) {
         return { success: false, error: 'Невалиден имейл или парола' };
       }
-      
       // Update last login
       await db.updateUser(user._id!.toString(), { lastLogin: new Date() });
-      
       return { success: true, user };
     } catch (error) {
       console.error('Login error:', error);
