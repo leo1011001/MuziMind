@@ -117,7 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const syncWithLastFM = async (lastfmUsername?: string) => {
+  const syncWithLastFM = async (_lastfmUsername?: string) => {
     try {
       setLoading(true);
       // lastfmUsername can be passed for explicit syncing
