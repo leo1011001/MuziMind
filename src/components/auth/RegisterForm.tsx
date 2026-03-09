@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaMusic, FaUser } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaMusic, FaUser, FaClock } from 'react-icons/fa';
 import './LoginForm.css';
 
 interface RegisterFormProps {
@@ -12,6 +12,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string>('');
+  const [pendingMessage, setPendingMessage] = useState<string>('');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -39,13 +40,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     }
 
     try {
-      await register(
+      const result = await register(
         formData.username,
         formData.email,
         formData.password,
         formData.lastfmUsername
       );
-      navigate('/');
+      if (result?.pending) {
+        setPendingMessage(result.message || 'Регистрацията е успешна! Моля, изчакайте одобрение от администратор.');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       setError((error as Error).message || 'Неочаквана грешка при регистрация');
     }
@@ -57,6 +62,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
       [e.target.name]: e.target.value
     }));
   };
+
+  if (pendingMessage) {
+    return (
+      <div className="auth-form register-form">
+        <div className="pending-approval-message">
+          <FaClock className="pending-icon" />
+          <h2>Чакащо одобрение</h2>
+          <p>{pendingMessage}</p>
+          <button onClick={onSwitchToLogin} className="submit-btn" style={{ marginTop: '1rem' }}>
+            Към вход
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-form register-form">

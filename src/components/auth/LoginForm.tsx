@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaClock } from 'react-icons/fa';
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -45,7 +45,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     <div className="auth-form">
       <h2>Вход</h2>
       <form onSubmit={handleSubmit} className="form-container">
-        {error && <div className="error-message">{error}</div>}
+        {error && (
+          error.includes('одобрен') ? (
+            <div className="approval-denied-message">
+              <FaClock className="approval-denied-icon" />
+              <h3>Чакащо одобрение</h3>
+              <p>{error}</p>
+            </div>
+          ) : (
+            <div className="error-message">{error}</div>
+          )
+        )}
 
         <div className="form-group">
           <label htmlFor="email"><FaEnvelope /> Имейл</label>

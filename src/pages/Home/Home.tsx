@@ -7,6 +7,7 @@ import { MusicPrediction } from '../../components/music/MusicPrediction';
 import { NowPlaying } from '../../components/music/NowPlaying';
 import { UserListeningHistory } from '../../components/music/UserListeningHistory';
 import { MusicOverview } from '../../components/music/MusicOverview';
+import { FaMusic, FaSync, FaExclamationTriangle, FaLink, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import './Home.css';
 
 interface HomeStats {
@@ -23,6 +24,7 @@ export const Home: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [syncMessage, setSyncMessage] = useState<string>('');
+  const [syncSuccess, setSyncSuccess] = useState<boolean>(true);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -43,7 +45,8 @@ export const Home: React.FC = () => {
       const result = await syncWithLastFM(user.lastfmUsername);
       if (result?.success) {
         setLastSynced(new Date());
-        setSyncMessage(`✅ Auto-synced! Added ${result.newScrobbles || 0} new tracks.`);
+        setSyncSuccess(true);
+        setSyncMessage(`Auto-synced! Added ${result.newScrobbles || 0} new tracks.`);
         setTimeout(() => setSyncMessage(''), 5000);
       }
     } catch (error) {
@@ -82,12 +85,14 @@ export const Home: React.FC = () => {
       const result = await syncWithLastFM(user.lastfmUsername!);
       if (result?.success) {
         setLastSynced(new Date());
-        setSyncMessage(`✅ Synced successfully! Added ${result.newScrobbles || 0} new tracks.`);
+        setSyncSuccess(true);
+        setSyncMessage(`Synced successfully! Added ${result.newScrobbles || 0} new tracks.`);
         await fetchUserStats(); // Refresh stats
         setTimeout(() => setSyncMessage(''), 5000);
       }
     } catch (error) {
-      setSyncMessage(`❌ Sync error: ${(error as Error).message}`);
+      setSyncSuccess(false);
+      setSyncMessage(`Sync error: ${(error as Error).message}`);
       setTimeout(() => setSyncMessage(''), 5000);
     } finally {
       setSyncing(false);
@@ -114,7 +119,7 @@ export const Home: React.FC = () => {
     <div className="page-container">
       <div className="home-header">
         <div className="header-left">
-          <h1 className="welcome-title">🎵 {getGreeting()}</h1>
+          <h1 className="welcome-title"><FaMusic /> {getGreeting()}</h1>
           <p className="welcome-subtitle">
             Твоето музикално пътешествие продължава тук...
           </p>
@@ -135,7 +140,7 @@ export const Home: React.FC = () => {
               </>
             ) : (
               <>
-                🔄 Синхронизирай
+                <FaSync /> Синхронизирай
               </>
             )}
           </button>
@@ -148,8 +153,8 @@ export const Home: React.FC = () => {
           )}
 
           {syncMessage && (
-            <div className={`sync-message ${syncMessage.includes('✅') ? 'success' : 'error'}`}>
-              {syncMessage}
+            <div className={`sync-message ${syncSuccess ? 'success' : 'error'}`}>
+              {syncSuccess ? <FaCheckCircle /> : <FaTimesCircle />} {syncMessage}
             </div>
           )}
         </div>
@@ -157,7 +162,7 @@ export const Home: React.FC = () => {
 
       {!user?.lastfmUsername && (
         <div className="glass-card warning-card fade-in">
-          <div className="warning-icon">⚠️</div>
+          <div className="warning-icon"><FaExclamationTriangle /></div>
           <div className="warning-content">
             <h3>Свържи Last.fm</h3>
             <p>
@@ -167,7 +172,7 @@ export const Home: React.FC = () => {
               className="glass-button primary"
               onClick={() => window.location.href = '/profile?tab=connections'}
             >
-              🔗 Свържи сега
+              <FaLink /> Свържи сега
             </button>
           </div>
         </div>

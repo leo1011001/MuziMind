@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaHeart, FaClipboardList, FaMusic } from 'react-icons/fa';
 import './MusicComponents.css';
 
 interface Scrobble {
@@ -44,7 +45,7 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
   return (
     <div className="glass-card recent-scrobbles">
       <div className="scrobbles-header">
-        <h3>📝 {language === 'en' ? 'Recent Plays' : 'Последни слушания'}</h3>
+        <h3><FaClipboardList /> {language === 'en' ? 'Recent Plays' : 'Последни слушания'}</h3>
         <span className="scrobbles-count">
           {scrobbles.length} {language === 'en' ? 'tracks' : 'песни'}
         </span>
@@ -52,7 +53,7 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
       
       {displayedScrobbles.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🎵</div>
+          <div className="empty-icon"><FaMusic /></div>
           <p>{language === 'en' ? 'No scrobbles yet' : 'Все още нямаш слушания'}</p>
           <small>
             {language === 'en' 
@@ -78,7 +79,7 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
                   </span>
                   {scrobble.loved && (
                     <span className="loved-indicator" title={language === 'en' ? 'Loved' : 'Харесана'}>
-                      ❤️
+                      <FaHeart />
                     </span>
                   )}
                 </div>

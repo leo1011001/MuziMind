@@ -21,6 +21,7 @@ export interface User {
   username: string;
   passwordHash: string;
   role?: 'user' | 'admin';
+  approved?: boolean;
   profile?: UserProfile;
   lastfmUsername?: string;
   lastfmSessionKey?: string;
@@ -41,6 +42,7 @@ export const createDefaultUser = (email: string, username: string, passwordHash:
     username,
     passwordHash,
     role: 'user',
+    approved: false,
     preferences: {
       language: 'bg',
       theme: 'dark',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { FaChartBar, FaMusic, FaTrophy, FaFire, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './Stats.css';
@@ -65,7 +65,7 @@ export const StatsPage: React.FC = () => {
 
           <div className="stat-card">
             <div className="stat-icon"><FaFire /></div>
-            <div className="stat-value">{Math.max(...(stats.listeningHours || []))}h</div>
+            <div className="stat-value">{(stats.listeningHours || []).indexOf(Math.max(...(stats.listeningHours || [0])))}:00</div>
             <div className="stat-label">Пиков час</div>
           </div>
         </div>

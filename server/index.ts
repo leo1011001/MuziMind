@@ -73,13 +73,21 @@ async function initServer() {
     await db.connect();
     console.log('🔗 DB connected, checking admin user...');
     const admin = await db.users.findOne({ role: 'admin' });
+    // If there's no admin, but the admin@localhost user exists with wrong role, fix it
     if (!admin) {
+      const existingAdminUser = await db.users.findOne({ email: 'admin@localhost' });
+      if (existingAdminUser) {
+        await db.updateUser(existingAdminUser._id!.toString(), { role: 'admin' } as any);
+        console.log('✅ Restored admin role for admin@localhost');
+      }
+    }
+    if (!admin && !(await db.users.findOne({ email: 'admin@localhost' }))) {
       console.log('⚙️ Creating default admin user (admin@localhost / adminpass) with Last.fm connection');
       try {
         const lastfmUsername = 'leo1011001';
         const result = await authService.register('admin@localhost', 'admin', 'adminpass', lastfmUsername);
         if (result.success && result.userId) {
-          await db.updateUser(result.userId, { role: 'admin' });
+          await db.updateUser(result.userId, { role: 'admin', approved: true } as any);
           console.log('✅ Admin user created with lastfmUsername:', lastfmUsername);
 
           // Try to fetch Last.fm info to validate API key and username
@@ -105,6 +113,12 @@ async function initServer() {
       }
     } else {
       console.log('✅ Admin user exists.');
+    }
+    // Always ensure the admin@localhost seed user keeps admin role
+    const seedAdmin = await db.users.findOne({ email: 'admin@localhost' });
+    if (seedAdmin && (seedAdmin.role !== 'admin' || !seedAdmin.approved)) {
+      await db.updateUser(seedAdmin._id!.toString(), { role: 'admin', approved: true } as any);
+      console.log('🔧 Re-applied admin role/approved to admin@localhost');
     }
   } catch (err) {
     console.error('DB init error:', err);
@@ -155,17 +169,8 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: result.error || 'Registration failed' });
     }
 
-    // Fetch created user and return sanitized object
-    const createdUser = await db.findUserById(result.userId);
-    if (!createdUser) {
-      return res.status(500).json({ error: 'Потребителят не може да бъде създаден' });
-    }
-
-    // Set session only after user is confirmed
-    req.session.userId = result.userId;
-
-    const { passwordHash, ...userData } = createdUser as any;
-    res.json({ success: true, user: userData });
+    // New users require admin approval — do NOT set session
+    res.json({ success: true, pending: true, message: 'Регистрацията е успешна! Моля, изчакайте одобрение от администратор.' });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
@@ -184,6 +189,10 @@ app.post('/api/login', async (req, res) => {
     const result = await authService.login(email, password);
     
     if (result.success && result.user && result.user._id) {
+      // Block unapproved non-admin users
+      if (!result.user.approved && result.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Акаунтът ви все още не е одобрен от администратор.' });
+      }
       req.session.userId = result.user._id.toString();
       res.json({ 
         success: true, 
@@ -191,6 +200,7 @@ app.post('/api/login', async (req, res) => {
           id: result.user._id.toString(),
           email: result.user.email,
           username: result.user.username,
+          role: result.user.role,
           preferences: result.user.preferences,
           lastfmUsername: result.user.lastfmUsername,
           stats: result.user.stats
@@ -325,7 +335,8 @@ app.get('/api/profile', requireAuth, async (req, res) => {
       role: user.role || 'user',
       createdAt: user.createdAt,
       profile: user.profile || {},
-      stats: user.stats || {}
+      stats: user.stats || {},
+      verificationStatus: (user as any).verificationStatus || 'none'
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -350,6 +361,24 @@ app.put('/api/profile', requireAuth, async (req, res) => {
     res.json({ success: true, profile });
   } catch (error) {
     console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Request profile verification
+app.post('/api/profile/request-verification', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const user = await db.findUserById(userId);
+    if (!user) return res.status(404).json({ error: 'Потребител не е намерен' });
+    const currentStatus = (user as any).verificationStatus;
+    if (currentStatus === 'pending') return res.status(400).json({ error: 'Вече имате чакаща заявка' });
+    if (currentStatus === 'approved') return res.status(400).json({ error: 'Профилът ви вече е верифициран' });
+    await db.updateUser(userId, { verificationStatus: 'pending' } as any);
+    res.json({ success: true, verificationStatus: 'pending' });
+  } catch (error) {
+    console.error('Request verification error:', error);
     res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
   }
 });
@@ -382,11 +411,21 @@ app.put('/api/admin/users/:id', requireAuth, async (req, res) => {
     }
 
     const targetId = String(req.params.id);
-    const { role, approved, verified } = req.body;
+    // Prevent admin from changing their own role
+    if (targetId === userId && req.body.role !== undefined) {
+      return res.status(400).json({ error: 'Не можете да промените собствената си роля' });
+    }
+    const { role, approved, verified, verificationStatus, username, email, lastfmUsername } = req.body;
     const updates: Record<string, any> = {};
     if (role === 'user' || role === 'admin') updates.role = role;
     if (typeof approved === 'boolean') updates.approved = approved;
     if (typeof verified === 'boolean') updates.verified = verified;
+    if (verificationStatus === 'approved' || verificationStatus === 'rejected' || verificationStatus === 'pending' || verificationStatus === 'none') {
+      updates.verificationStatus = verificationStatus;
+    }
+    if (typeof username === 'string' && username.trim().length >= 3) updates.username = username.trim();
+    if (typeof email === 'string' && email.includes('@')) updates.email = email.trim();
+    if (typeof lastfmUsername === 'string') updates.lastfmUsername = lastfmUsername.trim();
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'Няма промени за прилагане' });

@@ -99,7 +99,7 @@ export class DataSyncService {
       // Update user stats
       await this.updateUserStats(userId);
       
-      console.log(`✅ Sync complete: ${newScrobbles} new scrobbles added, now playing: ${nowPlaying ? nowPlaying.name : 'none'}`);
+      console.log(`Sync complete: ${newScrobbles} new scrobbles added, now playing: ${nowPlaying ? nowPlaying.name : 'none'}`);
       
       return {
         success: true,
@@ -217,12 +217,12 @@ export class DataSyncService {
     });
     let topSongs = Object.values(songMap)
       .sort((a, b) => b.playCount - a.playCount)
-      .slice(0, 10);
+      .slice(0, 9);
     // If no scrobbles in DB, fallback to Last.fm API top tracks
     if (topSongs.length === 0 && user?.lastfmUsername) {
       try {
         const { lastFMService } = await import('./lastfm');
-        const topTracksResp = await lastFMService.getTopTracks(user.lastfmUsername, '7day', 10);
+        const topTracksResp = await lastFMService.getTopTracks(user.lastfmUsername, '7day', 9);
         const tracks = topTracksResp?.toptracks?.track || [];
         topSongs = tracks.map((t: any) => ({
           name: t.name,
@@ -240,7 +240,7 @@ export class DataSyncService {
         playCount: a.playCount
       })),
       topSongs,
-      topTags: [],
+      topTags: topArtists.flatMap(a => a.tags || []).filter((t, i, arr) => arr.indexOf(t) === i).slice(0, 10),
       listeningHours,
       recentScrobbles: scrobbles.slice(0, 20)
     };
@@ -297,14 +297,14 @@ export const syncService = new DataSyncService();
   // Analyze listening pattern
   const totalListenings = stats.totalScrobbles || 0;
   const avgListeningsPerHour = totalListenings / 24;
-  const topGenre = stats.topGenres?.[0]?.name || 'смесена музика';
+  const topGenre = stats.topTags?.[0] || 'смесена музика';
   const topArtist = recommendedArtists[0]?.name || 'unknown';
   
   // Calculate listening intensity
   const intensityLevel = totalListenings > 1000 ? 'passionate' : totalListenings > 500 ? 'active' : 'regular';
   
   // Get top 3 genres for deeper recommendations
-  const topThreeGenres = stats.topGenres?.slice(0, 3).map((g: any) => g.name) || [topGenre];
+  const topThreeGenres = stats.topTags?.slice(0, 3) || [topGenre];
   
   // Generate personalized predictions based on time of day
   const currentHour = new Date().getHours();
@@ -315,25 +315,25 @@ export const syncService = new DataSyncService();
   
   if (currentHour >= 6 && currentHour < 9) {
     timeContext = 'рано сутрин';
-    timeEmoji = '🌅';
+    timeEmoji = 'sunrise';
   } else if (currentHour >= 9 && currentHour < 12) {
     timeContext = 'сутрин';
-    timeEmoji = '☀️';
+    timeEmoji = 'sun';
   } else if (currentHour >= 12 && currentHour < 15) {
     timeContext = 'след обяд';
-    timeEmoji = '🌤️';
+    timeEmoji = 'cloud-sun';
   } else if (currentHour >= 15 && currentHour < 18) {
     timeContext = 'следобед';
-    timeEmoji = '🌞';
+    timeEmoji = 'afternoon';
   } else if (currentHour >= 18 && currentHour < 21) {
     timeContext = 'вечер';
-    timeEmoji = '🌆';
+    timeEmoji = 'sunset';
   } else if (currentHour >= 21 && currentHour < 23) {
     timeContext = 'късна вечер';
-    timeEmoji = '🌙';
+    timeEmoji = 'moon';
   } else {
     timeContext = 'нощ';
-    timeEmoji = '🌃';
+    timeEmoji = 'night';
   }
 
   // Create personalized daily prediction message
@@ -346,37 +346,37 @@ export const syncService = new DataSyncService();
   
   if (peakHour === currentHour) {
     const variants = [
-      `🔥 Точно сега е твоят пиков час! Перфектен момент да пуснеш ${topArtist} — твоят #{1} артист. Наслади се на ${topThreeGenres[0]}!`,
-      `⚡ Ей, ${peakHour}:00 ч. е! Обикновено тук слушаш най-много. Какво ще кажеш за ${topArtist} или нещо ново от ${topThreeGenres[0]}?`,
-      `🎯 Уцели пиковия си час! Сега е моментът за любимите ти — ${topArtist}, ${secondArtist} и чист ${topThreeGenres[0]} звук.`
+      `Точно сега е твоят пиков час! Перфектен момент да пуснеш ${topArtist} — твоят #{1} артист. Наслади се на ${topThreeGenres[0]}!`,
+      `Ей, ${peakHour}:00 ч. е! Обикновено по това време слушаш най-много. Какво ще кажеш за ${topArtist} или нещо ново от ${topThreeGenres[0]}?`,
+      `Уцели пиковия си час! Сега е моментът за любимите ти — ${topArtist}, ${secondArtist} и чист ${topThreeGenres[0]} звук.`
     ];
     dailyPrediction = variants[rand];
   } else if (currentHour === secondPeak) {
     const variants = [
-      `🎶 Вторият ти най-активен час е тук (${secondPeak}:00 ч.)! Идеален за ${topThreeGenres[0]} и нови открития.`,
-      `💫 Около ${secondPeak}:00 ч. винаги намираш време за музика. Опитай ${secondArtist} или нещо от ${topThreeGenres[0]}.`,
-      `🌟 ${secondPeak}:00 ч. — твоят скрит музикален момент. Препоръка: ${topArtist} с нотка ${topThreeGenres[0]}.`
+      `Вторият ти най-активен час е тук (${secondPeak}:00 ч.)! Идеален за ${topThreeGenres[0]} и нови открития.`,
+      `Около ${secondPeak}:00 ч. винаги намираш време за музика. Опитай ${secondArtist} или нещо от ${topThreeGenres[0]}.`,
+      `${secondPeak}:00 ч. — твоят скрит музикален момент. Препоръка: ${topArtist} с нотка ${topThreeGenres[0]}.`
     ];
     dailyPrediction = variants[rand];
   } else if (listeningHours[currentHour] > avgListeningsPerHour * 0.8) {
     const variants = [
-      `🎵 ${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} е силно време за теб. ${topArtist} и ${topThreeGenres[0]} — класическата ти комбинация!`,
-      `🎧 Статистиката показва, че обичаш да слушаш ${timeContext}. Днес пробвай ${secondArtist} за разнообразие!`,
-      `💿 ${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} + ${topThreeGenres[0]} = твоята формула. Но може би ${thirdArtist} ще те изненада?`
+      `${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} е силно време за теб. ${topArtist} и ${topThreeGenres[0]} — класическата ти комбинация!`,
+      `Статистиката показва, че обичаш да слушаш ${timeContext}. Днес пробвай ${secondArtist} за разнообразие!`,
+      `${timeContext.charAt(0).toUpperCase() + timeContext.slice(1)} + ${topThreeGenres[0]} = твоята формула. Но може би ${thirdArtist} ще те изненада?`
     ];
     dailyPrediction = variants[rand];
   } else if (listeningHours[peakHour] > 0 && peakHour !== currentHour) {
     const variants = [
-      `⏰ Пиковият ти час е ${peakHour}:00 ч. — до тогава разгледай ${topArtist} и ${secondArtist} за настроение!`,
-      `🎼 Обикновено около ${peakHour}:00 ч. слушаш най-интензивно. Междувременно, ${topThreeGenres[0]} звучи добре за ${timeContext}.`,
-      `💡 Знаеш ли, че ${peakHour}:00 ч. е твоят музикален връх? Опитай ${topArtist} или артисти подобни на ${secondArtist} сега.`
+      `Пиковият ти час е ${peakHour}:00 ч. — до тогава разгледай ${topArtist} и ${secondArtist} за настроение!`,
+      `Обикновено около ${peakHour}:00 ч. слушаш най-интензивно. Междувременно, ${topThreeGenres[0]} звучи добре за ${timeContext}.`,
+      `Знаеш ли, че ${peakHour}:00 ч. е твоят музикален връх? Опитай ${topArtist} или артисти подобни на ${secondArtist} сега.`
     ];
     dailyPrediction = variants[rand];
   } else {
     const variants = [
-      `🎧 Добър ${currentDay} за музика! Предложение: ${topArtist} и ${topThreeGenres[0]} за перфектен саундтрак.`,
-      `🎵 ${currentDay} — ден за открития. Започни с ${topArtist}, после виж какво крие ${topThreeGenres[0]}.`,
-      `💿 Нов ден, нова музика! ${topArtist} е вечна класика, но ${thirdArtist} може да стане нов фаворит.`
+      `Добър ${currentDay} за музика! Предложение: ${topArtist} и ${topThreeGenres[0]} за перфектен саундтрак.`,
+      `${currentDay} — ден за открития. Започни с ${topArtist}, после виж какво крие ${topThreeGenres[0]}.`,
+      `Нов ден, нова музика! ${topArtist} е вечна класика, но ${thirdArtist} може да стане нов фаворит.`
     ];
     dailyPrediction = variants[rand];
   }
@@ -392,7 +392,7 @@ export const syncService = new DataSyncService();
   if (currentlyPlaying) {
     const currentTrack = currentlyPlaying.track;
     const artistDisplay = currentTrack.artist || 'Unknown';
-    enhancedPrediction += ` \n🎶 Сега слушаш: "${currentTrack.name}" от ${artistDisplay}`;
+    enhancedPrediction += ` \nСега слушаш: "${currentTrack.name}" от ${artistDisplay}`;
   }
   
   return {

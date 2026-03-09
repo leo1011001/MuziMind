@@ -17,7 +17,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string, lastfmUsername?: string) => Promise<void>;
+  register: (username: string, email: string, password: string, lastfmUsername?: string) => Promise<{ pending?: boolean; message?: string }>;
   logout: () => Promise<void>;
   syncWithLastFM: (lastfmUsername: string) => Promise<{ success: boolean; newScrobbles: number }>;
   loading: boolean;
@@ -103,7 +103,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
+      if (data.pending) {
+        // Account created but needs admin approval
+        return { pending: true, message: data.message };
+      }
       setUser(data.user || null);
+      return {};
     } catch (error) {
       console.error('Registration error:', error);
       throw error;

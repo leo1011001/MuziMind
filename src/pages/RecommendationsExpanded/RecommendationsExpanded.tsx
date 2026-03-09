@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaMusic, FaClock, FaChartBar, FaSun, FaCloudSun, FaCloudMoon, FaMoon } from 'react-icons/fa';
 import './Recommendations.css';
 
 const intensityLabels: Record<string, string> = {
@@ -9,10 +10,20 @@ const intensityLabels: Record<string, string> = {
   regular: 'Слушател',
 };
 
-const intensityEmojis: Record<string, string> = {
-  passionate: '🔥',
-  active: '⚡',
-  regular: '🎧',
+const intensityIcons: Record<string, React.ReactNode> = {
+  passionate: <FaFire />,
+  active: <FaBolt />,
+  regular: <FaHeadphones />,
+};
+
+const timeIcons: Record<string, React.ReactNode> = {
+  sunrise: <FaSun />,
+  sun: <FaSun />,
+  'cloud-sun': <FaCloudSun />,
+  afternoon: <FaSun />,
+  sunset: <FaCloudSun />,
+  moon: <FaCloudMoon />,
+  night: <FaMoon />,
 };
 
 export const RecommendationsExpanded: React.FC = () => {
@@ -65,7 +76,7 @@ export const RecommendationsExpanded: React.FC = () => {
   const ctx = prediction?.currentTimeContext;
   const patterns = prediction?.listeningPatterns;
   const intensityLabel = intensityLabels[prediction?.intensityLevel] || 'Слушател';
-  const intensityEmoji = intensityEmojis[prediction?.intensityLevel] || '🎧';
+  const intensityIcon = intensityIcons[prediction?.intensityLevel] || <FaHeadphones />;
 
   return (
     <div className="page-container recommendations-page">
@@ -73,10 +84,10 @@ export const RecommendationsExpanded: React.FC = () => {
         <button className="glass-button back-btn" onClick={() => navigate('/')}>
           ← Назад към начало
         </button>
-        <h1>🔮 Твоя дневна прогноза</h1>
+        <h1><FaHatWizard /> Твоя дневна прогноза</h1>
         {ctx && (
           <div className="rec-time-info">
-            {ctx.emoji} {ctx.period} · {intensityEmoji} {intensityLabel}
+            {timeIcons[ctx.emoji] || <FaClock />} {ctx.period} · {intensityIcon} {intensityLabel}
           </div>
         )}
       </div>
@@ -85,14 +96,14 @@ export const RecommendationsExpanded: React.FC = () => {
         <div className="rec-content">
           {/* Prediction Card */}
           <div className="glass-card rec-prediction-card">
-            <div className="rec-prediction-icon">🔮</div>
+            <div className="rec-prediction-icon"><FaHatWizard /></div>
             <h2>Дневна прогноза</h2>
             <p className="rec-prediction-text">{prediction.dailyPrediction}</p>
           </div>
 
           {/* Peak Hour */}
           <div className="glass-card rec-peak-section">
-            <h2>⏰ Твой пиков час</h2>
+            <h2><FaClock /> Твой пиков час</h2>
             <div className="rec-peak-display">
               <div className="rec-peak-time">{prediction.peakHour}:00 ч.</div>
               <p>Това е часът, когато обикновено слушаш най-много музика</p>
@@ -105,25 +116,25 @@ export const RecommendationsExpanded: React.FC = () => {
           {/* Listening Patterns */}
           {patterns && (
             <div className="glass-card rec-patterns-section">
-              <h2>📊 Модел на слушане</h2>
+              <h2><FaChartBar /> Модел на слушане</h2>
               <div className="rec-patterns-grid">
                 <div className="rec-pattern-item">
-                  <span className="rec-pattern-emoji">🌅</span>
+                  <span className="rec-pattern-emoji"><FaSun /></span>
                   <span className="rec-pattern-label">Сутрин</span>
                   <span className="rec-pattern-value">{patterns.morning}</span>
                 </div>
                 <div className="rec-pattern-item">
-                  <span className="rec-pattern-emoji">☀️</span>
+                  <span className="rec-pattern-emoji"><FaSun /></span>
                   <span className="rec-pattern-label">Следобед</span>
                   <span className="rec-pattern-value">{patterns.afternoon}</span>
                 </div>
                 <div className="rec-pattern-item">
-                  <span className="rec-pattern-emoji">🌆</span>
+                  <span className="rec-pattern-emoji"><FaCloudSun /></span>
                   <span className="rec-pattern-label">Вечер</span>
                   <span className="rec-pattern-value">{patterns.evening}</span>
                 </div>
                 <div className="rec-pattern-item">
-                  <span className="rec-pattern-emoji">🌃</span>
+                  <span className="rec-pattern-emoji"><FaMoon /></span>
                   <span className="rec-pattern-label">Нощ</span>
                   <span className="rec-pattern-value">{patterns.night}</span>
                 </div>
@@ -133,7 +144,7 @@ export const RecommendationsExpanded: React.FC = () => {
 
           {/* Recommended Artists */}
           <div className="glass-card rec-artists-section">
-            <h2>🎤 Препоръчани артисти</h2>
+            <h2><FaMicrophone /> Препоръчани артисти</h2>
             <div className="rec-artist-grid">
               {prediction.recommendedArtists?.map((artist: any, i: number) => (
                 <div key={i} className="rec-artist-card">
@@ -148,7 +159,7 @@ export const RecommendationsExpanded: React.FC = () => {
           {/* Top Genres */}
           {prediction.topGenres && prediction.topGenres.length > 0 && (
             <div className="glass-card rec-genres-section">
-              <h2>🎶 Любими жанрове</h2>
+              <h2><FaMusic /> Любими жанрове</h2>
               <div className="rec-genres-list">
                 {prediction.topGenres.map((genre: string, i: number) => (
                   <span key={i} className="rec-genre-tag">{genre}</span>

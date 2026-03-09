@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FaSmile, FaHistory, FaBolt, FaCloud, FaCompass, FaHeart, FaBullseye, FaCloudRain, FaHatWizard, FaPaintBrush, FaBalanceScale, FaMusic, FaExclamationTriangle, FaBook, FaStar } from 'react-icons/fa';
 import './ReadingComponents.css';
 
 interface DailyReadingProps {
@@ -17,10 +18,10 @@ interface ReadingData {
   }>;
 }
 
-const moodEmoji: Record<string, string> = {
-  happy: '😊', nostalgic: '🕰️', energetic: '⚡', calm: '☁️',
-  adventurous: '🧭', romantic: '💖', focused: '🎯',
-  melancholic: '🌧️', mysterious: '🔮', creative: '🎨', balanced: '⚖️',
+const moodIcons: Record<string, React.ReactNode> = {
+  happy: <FaSmile />, nostalgic: <FaHistory />, energetic: <FaBolt />, calm: <FaCloud />,
+  adventurous: <FaCompass />, romantic: <FaHeart />, focused: <FaBullseye />,
+  melancholic: <FaCloudRain />, mysterious: <FaHatWizard />, creative: <FaPaintBrush />, balanced: <FaBalanceScale />,
 };
 
 const moodColors: Record<string, string> = {
@@ -97,7 +98,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
     return (
       <div className="glass-card daily-reading loading">
         <div className="reading-header">
-          <h3>🔮 Дневен прочит</h3>
+          <h3><FaHatWizard /> Дневен прочит</h3>
         </div>
         <div className="loading-state">
           <div className="loading-spinner"></div>
@@ -111,10 +112,10 @@ export function DailyReading({ userId }: DailyReadingProps) {
     return (
       <div className="glass-card daily-reading error">
         <div className="reading-header">
-          <h3>🔮 Дневен прочит</h3>
+          <h3><FaHatWizard /> Дневен прочит</h3>
         </div>
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon"><FaExclamationTriangle /></div>
           <p>{error}</p>
           <button onClick={generateNewReading} disabled={generating} className="glass-button retry-btn">
             {generating ? 'Генериране...' : 'Генерирай прочит'}
@@ -128,10 +129,10 @@ export function DailyReading({ userId }: DailyReadingProps) {
     return (
       <div className="glass-card daily-reading empty">
         <div className="reading-header">
-          <h3>🔮 Дневен прочит</h3>
+          <h3><FaHatWizard /> Дневен прочит</h3>
         </div>
         <div className="empty-state">
-          <div className="empty-icon">📖</div>
+          <div className="empty-icon"><FaBook /></div>
           <p>Няма наличен прочит</p>
           <button onClick={generateNewReading} disabled={generating} className="glass-button primary generate-btn">
             {generating ? 'Генериране...' : 'Генерирай първи прочит'}
@@ -143,13 +144,13 @@ export function DailyReading({ userId }: DailyReadingProps) {
 
   const moodLabel = moodLabels[reading.mood] || reading.mood;
   const moodColor = moodColors[reading.mood] || 'rgba(180, 160, 255, 0.2)';
-  const moodIcon = moodEmoji[reading.mood] || '🎵';
+  const moodIcon = moodIcons[reading.mood] || <FaMusic />;
 
   return (
     <div className="glass-card daily-reading">
       <div className="reading-header">
         <div className="header-left">
-          <h3>🔮 Дневен прочит</h3>
+          <h3><FaHatWizard /> Дневен прочит</h3>
           <div className="reading-date">
             {new Date(reading.date).toLocaleDateString('bg-BG', {
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -170,7 +171,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       </div>
       {reading.recommendations && reading.recommendations.length > 0 && (
         <div className="recommendations-section">
-          <h4>🎵 Препоръчано за теб</h4>
+          <h4><FaMusic /> Препоръчано за теб</h4>
           <div className="recommendations-list">
             {reading.recommendations.map((rec, index) => (
               <div key={index} className="recommendation-item">
@@ -188,7 +189,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       )}
       <div className="reading-footer">
         <button onClick={generateNewReading} disabled={generating} className="glass-button generate-new-btn">
-          {generating ? <><span className="spinner-small"></span> Генериране...</> : <>✨ Нов прочит</>}
+          {generating ? <><span className="spinner-small"></span> Генериране...</> : <><FaStar /> Нов прочит</>}
         </button>
       </div>
     </div>

@@ -1,12 +1,16 @@
+﻿/* ===== Auth Forms (Login + Register) ===== */
+
 .auth-form {
-  max-width: 450px;
+  max-width: 560px;
+  width: 100%;
   margin: 2rem auto;
-  padding: 2.5rem;
+  padding: 2.5rem 3rem;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
   border-radius: 16px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
   animation: slideInUp 0.5s ease;
 }
 
@@ -17,15 +21,25 @@
   font-size: 1.8rem;
 }
 
+.register-form {
+  max-width: 560px;
+}
+
+/* ===== Form Layout ===== */
+
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .form-group label {
@@ -43,6 +57,8 @@
   font-size: 1.1rem;
 }
 
+/* ===== Inputs ===== */
+
 .form-group input {
   padding: 0.9rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -50,6 +66,9 @@
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
   transition: all 0.3s ease;
 }
 
@@ -64,6 +83,38 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Last.fm field highlight ===== */
+
+.form-group.lastfm-required {
+  background: rgba(99, 102, 241, 0.08);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.form-group.lastfm-required input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group small {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.35rem;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+/* ===== Submit Button ===== */
+
 .submit-btn {
   padding: 1rem;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -72,11 +123,14 @@
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -90,6 +144,8 @@
   cursor: not-allowed;
 }
 
+/* ===== Error Message ===== */
+
 .error-message {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -100,6 +156,38 @@
   font-weight: 500;
   animation: shake 0.5s ease;
 }
+
+/* ===== Approval Denied Message ===== */
+
+.approval-denied-message {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  animation: slideInUp 0.4s ease;
+}
+
+.approval-denied-icon {
+  font-size: 2.5rem;
+  color: #fbbf24;
+  margin-bottom: 0.75rem;
+}
+
+.approval-denied-message h3 {
+  color: #fbbf24;
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.approval-denied-message p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ===== Form Footer ===== */
 
 .form-footer {
   text-align: center;
@@ -131,33 +219,32 @@
   color: #8b5cf6;
 }
 
-.register-form {
-  max-width: 500px;
+/* ===== Pending Approval Message ===== */
+
+.pending-approval-message {
+  text-align: center;
+  padding: 2rem 1rem;
 }
 
-/* Fix register form borders and spacing */
-.register-form .form-group {
-  margin-bottom: 0.8rem;
+.pending-approval-message .pending-icon {
+  font-size: 3rem;
+  color: #fbbf24;
+  margin-bottom: 1rem;
 }
 
-.register-form .form-container {
-  gap: 1rem;
+.pending-approval-message h2 {
+  color: #fbbf24;
+  margin-bottom: 0.5rem;
 }
 
-.form-group.lastfm-required {
-  background: rgba(99, 102, 241, 0.1);
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+.pending-approval-message p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
-.form-group small {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-top: 0.35rem;
-}
+/* ===== Stats Boxes (shared) ===== */
 
-/* Stats box styling for consistent sizing */
 .stats-box {
   padding: 1.5rem 1rem;
   background: rgba(99, 102, 241, 0.05);
@@ -196,7 +283,8 @@
   background: rgba(99, 102, 241, 0.2);
 }
 
-/* Currently playing highlight with green glow */
+/* ===== Now Playing ===== */
+
 .now-playing-highlight {
   padding: 2rem;
   background: linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(99, 102, 241, 0.15));
@@ -218,15 +306,6 @@
   border-radius: 50%;
   animation: pulse-glow 2s ease-in-out infinite;
   box-shadow: 0 0 15px #4ade80;
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 15px #4ade80, 0 0 25px rgba(74, 222, 128, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 25px #4ade80, 0 0 45px rgba(74, 222, 128, 0.9);
-  }
 }
 
 .now-playing-content {
@@ -257,10 +336,7 @@
   margin-bottom: 1rem;
 }
 
-.required {
-  color: #ef4444;
-  font-weight: bold;
-}
+/* ===== Animations ===== */
 
 @keyframes slideInUp {
   from {
@@ -274,13 +350,25 @@
 }
 
 @keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes pulse-glow {
   0%, 100% {
-    transform: translateX(0);
+    box-shadow: 0 0 15px #4ade80, 0 0 25px rgba(74, 222, 128, 0.6);
   }
-  25% {
-    transform: translateX(-5px);
+  50% {
+    box-shadow: 0 0 25px #4ade80, 0 0 45px rgba(74, 222, 128, 0.9);
   }
-  75% {
-    transform: translateX(5px);
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 600px) {
+  .auth-form {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
   }
 }

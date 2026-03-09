@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaClock, FaSun, FaMoon, FaCloudMoon, FaCloudSun } from 'react-icons/fa';
 import './MusicComponents.css';
 
 interface PredictionData {
@@ -14,16 +15,26 @@ interface PredictionData {
   listeningPatterns: { morning: number; afternoon: number; evening: number; night: number };
 }
 
+const timeIcons: Record<string, React.ReactNode> = {
+  sunrise: <FaSun />,
+  sun: <FaSun />,
+  'cloud-sun': <FaCloudSun />,
+  afternoon: <FaSun />,
+  sunset: <FaCloudSun />,
+  moon: <FaCloudMoon />,
+  night: <FaMoon />,
+};
+
 const intensityLabels: Record<string, string> = {
   passionate: 'Страстен слушател',
   active: 'Активен слушател',
   regular: 'Слушател',
 };
 
-const intensityEmojis: Record<string, string> = {
-  passionate: '🔥',
-  active: '⚡',
-  regular: '🎧',
+const intensityIcons: Record<string, React.ReactNode> = {
+  passionate: <FaFire />,
+  active: <FaBolt />,
+  regular: <FaHeadphones />,
 };
 
 export const MusicPrediction: React.FC = () => {
@@ -57,7 +68,7 @@ export const MusicPrediction: React.FC = () => {
     return (
       <div className="glass-card music-prediction">
         <div className="prediction-header">
-          <h3>🔮 Дневна прогноза</h3>
+          <h3><FaHatWizard /> Дневна прогноза</h3>
         </div>
         <div className="prediction-loading">
           <div className="loading-spinner"></div>
@@ -71,7 +82,7 @@ export const MusicPrediction: React.FC = () => {
     return (
       <div className="glass-card music-prediction">
         <div className="prediction-header">
-          <h3>🔮 Дневна прогноза</h3>
+          <h3><FaHatWizard /> Дневна прогноза</h3>
         </div>
         <p className="prediction-empty">Няма налични данни за прогноза.</p>
       </div>
@@ -79,20 +90,20 @@ export const MusicPrediction: React.FC = () => {
   }
 
   const intensityLabel = intensityLabels[prediction.intensityLevel] || 'Слушател';
-  const intensityEmoji = intensityEmojis[prediction.intensityLevel] || '🎧';
+  const intensityIcon = intensityIcons[prediction.intensityLevel] || <FaHeadphones />;
   const ctx = prediction.currentTimeContext;
 
   return (
     <div className="glass-card music-prediction">
       <div className="prediction-header">
         <div className="prediction-header-left">
-          <h3>🔮 Дневна прогноза</h3>
+          <h3><FaHatWizard /> Дневна прогноза</h3>
           <span className="prediction-time-badge">
-            {ctx?.emoji} {ctx?.period}
+            {timeIcons[ctx?.emoji] || <FaClock />} {ctx?.period}
           </span>
         </div>
         <div className="intensity-badge" title={intensityLabel}>
-          <span>{intensityEmoji}</span>
+          <span>{intensityIcon}</span>
           <span>{intensityLabel}</span>
         </div>
       </div>
@@ -103,7 +114,7 @@ export const MusicPrediction: React.FC = () => {
 
       {prediction.recommendedArtists && prediction.recommendedArtists.length > 0 && (
         <div className="prediction-artists">
-          <h4>🎤 Препоръчани артисти</h4>
+          <h4><FaMicrophone /> Препоръчани артисти</h4>
           <div className="prediction-artists-list">
             {prediction.recommendedArtists.map((a, i) => (
               <div key={i} className="prediction-artist-item">
@@ -118,7 +129,7 @@ export const MusicPrediction: React.FC = () => {
 
       <div className="prediction-footer">
         <div className="prediction-peak">
-          ⏰ Пиков час: <strong>{prediction.peakHour}:00 ч.</strong>
+          <FaClock /> Пиков час: <strong>{prediction.peakHour}:00 ч.</strong>
         </div>
         <button className="glass-button prediction-expand-btn" onClick={() => navigate('/recommendations-expanded')}>
           Виж повече →

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaSave, FaArrowLeft, FaLastfm, FaCalendarAlt, FaMusic } from 'react-icons/fa';
+import { FaUser, FaSave, FaArrowLeft, FaLastfm, FaCalendarAlt, FaMusic, FaCrown, FaHeadphones, FaCheckCircle, FaTimesCircle, FaEdit, FaShieldAlt } from 'react-icons/fa';
 import './Profile.css';
 
 interface ProfileData {
@@ -72,13 +72,13 @@ export default function Profile() {
         body: JSON.stringify({ bio, pronouns, nationality, gender })
       });
       if (res.ok) {
-        setMessage('✅ Профилът е обновен успешно!');
+        setMessage('success');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('❌ Грешка при запазване');
+        setMessage('error');
       }
     } catch (e) {
-      setMessage('❌ Грешка при запазване');
+      setMessage('error');
     } finally {
       setSaving(false);
     }
@@ -122,7 +122,7 @@ export default function Profile() {
           <div className="profile-identity">
             <h2>{profile?.username}</h2>
             {pronouns && <span className="profile-pronouns">{pronouns}</span>}
-            <span className="profile-role">{profile?.role === 'admin' ? '👑 Администратор' : '🎧 Потребител'}</span>
+            <span className="profile-role">{profile?.role === 'admin' ? <><FaCrown /> Администратор</> : <><FaHeadphones /> Потребител</>}</span>
           </div>
         </div>
 
@@ -137,11 +137,17 @@ export default function Profile() {
             <FaMusic /> <span>{profile?.stats?.totalScrobbles?.toLocaleString() || 0} слушания</span>
           </div>
         </div>
+
+        {(user?.role === 'admin' || profile?.role === 'admin') && (
+          <button className="glass-button admin-panel-btn" onClick={() => navigate('/admin')}>
+            <FaShieldAlt /> Админ панел
+          </button>
+        )}
       </div>
 
       {/* Edit Profile Form */}
       <div className="glass-card profile-edit-card">
-        <h3>✏️ Редактирай профила</h3>
+        <h3><FaEdit /> Редактирай профила</h3>
 
         <div className="profile-form">
           <div className="form-group">
@@ -190,7 +196,13 @@ export default function Profile() {
             />
           </div>
 
-          {message && <div className="profile-message">{message}</div>}
+          {message && (
+            <div className={`profile-message ${message === 'success' ? 'success' : 'error'}`}>
+              {message === 'success' 
+                ? <><FaCheckCircle /> Профилът е обновен успешно!</> 
+                : <><FaTimesCircle /> Грешка при запазване</>}
+            </div>
+          )}
 
           <button className="glass-button save-btn" onClick={handleSave} disabled={saving}>
             <FaSave /> {saving ? 'Запазване...' : 'Запази промените'}
