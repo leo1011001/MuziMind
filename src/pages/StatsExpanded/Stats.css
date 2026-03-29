@@ -1,5 +1,5 @@
 .stats-page {
-  padding: 2rem;
+  padding: 0;
 }
 
 .page-header {
@@ -60,6 +60,12 @@
 
 .stat-card.big {
   grid-column: span 2;
+}
+
+@media (max-width: 480px) {
+  .stat-card.big {
+    grid-column: span 1;
+  }
 }
 
 .stat-icon {

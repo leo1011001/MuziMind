@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaClock, FaSun, FaMoon, FaCloudMoon, FaCloudSun } from 'react-icons/fa';
+import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaClock, FaSun, FaMoon, FaCloudMoon, FaCloudSun, FaArrowUp } from 'react-icons/fa';
 import './MusicComponents.css';
 
 interface PredictionData {
   dailyPrediction: string;
-  recommendedArtists: Array<{ name: string; score: number }>;
+  recommendedArtists: Array<{ name: string; score: number; trending?: boolean }>;
   peakHour: number;
   topGenres: string[];
   topArtist: string;
@@ -119,8 +119,17 @@ export const MusicPrediction: React.FC = () => {
             {prediction.recommendedArtists.map((a, i) => (
               <div key={i} className="prediction-artist-item">
                 <div className="prediction-artist-rank">#{i + 1}</div>
-                <div className="prediction-artist-name">{a.name}</div>
-                <div className="prediction-artist-score">{a.score} слушания</div>
+                <div className="prediction-artist-name">
+                  {a.name}
+                  {a.trending && (
+                    <span className="trending-badge" title="Трендинг за теб"><FaArrowUp /></span>
+                  )}
+                </div>
+                <div className="prediction-artist-score">
+                  {typeof a.score === 'number' && a.score < 1
+                    ? `${Math.round(a.score * 100)}%`
+                    : `${a.score}`}
+                </div>
               </div>
             ))}
           </div>

@@ -56,7 +56,7 @@ export const RecommendationsExpanded: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="page-container recommendations-page">
+      <div className="recommendations-page">
         <p className="auth-prompt">Моля, влезте в системата</p>
       </div>
     );
@@ -64,7 +64,7 @@ export const RecommendationsExpanded: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container recommendations-page">
+      <div className="recommendations-page">
         <div className="rec-loading">
           <div className="rec-loading-spinner"></div>
           <p>Генериране на персонализирани препоръки...</p>
@@ -79,7 +79,7 @@ export const RecommendationsExpanded: React.FC = () => {
   const intensityIcon = intensityIcons[prediction?.intensityLevel] || <FaHeadphones />;
 
   return (
-    <div className="page-container recommendations-page">
+    <div className="recommendations-page">
       <div className="rec-header">
         <button className="glass-button back-btn" onClick={() => navigate('/')}>
           ← Назад към начало

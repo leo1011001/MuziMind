@@ -67,61 +67,64 @@ app.use(session({
   }
 }));
 
-// Connect to database and seed admin user if missing
+// Connect to database and seed admin user if missing.
+// NOTE: Heavy work (Last.fm sync) runs AFTER the server is already listening
+// to avoid blocking the HTTP server startup.
 async function initServer() {
+  await db.connect();
+  console.log('🔗 DB connected, checking admin user...');
+
+  const admin = await db.users.findOne({ role: 'admin' });
+
+  // If the seed user exists but lost admin role, restore it quickly
+  if (!admin) {
+    const existingAdminUser = await db.users.findOne({ email: 'admin@localhost' });
+    if (existingAdminUser) {
+      await db.updateUser(existingAdminUser._id!.toString(), { role: 'admin', approved: true } as any);
+      console.log('✅ Restored admin role for admin@localhost');
+      return; // done synchronously
+    }
+  }
+
+  // Always ensure the seed user keeps admin role (cheap check)
+  const seedAdmin = await db.users.findOne({ email: 'admin@localhost' });
+  if (seedAdmin && (seedAdmin.role !== 'admin' || !seedAdmin.approved)) {
+    await db.updateUser(seedAdmin._id!.toString(), { role: 'admin', approved: true } as any);
+    console.log('🔧 Re-applied admin role/approved to admin@localhost');
+  }
+
+  if (admin || seedAdmin) {
+    console.log('✅ Admin user exists.');
+    return;
+  }
+
+  // First-ever boot: create the admin user synchronously (fast — just a DB write + bcrypt)
+  console.log('⚙️ Creating default admin user (admin@localhost / adminpass)');
   try {
-    await db.connect();
-    console.log('🔗 DB connected, checking admin user...');
-    const admin = await db.users.findOne({ role: 'admin' });
-    // If there's no admin, but the admin@localhost user exists with wrong role, fix it
-    if (!admin) {
-      const existingAdminUser = await db.users.findOne({ email: 'admin@localhost' });
-      if (existingAdminUser) {
-        await db.updateUser(existingAdminUser._id!.toString(), { role: 'admin' } as any);
-        console.log('✅ Restored admin role for admin@localhost');
-      }
-    }
-    if (!admin && !(await db.users.findOne({ email: 'admin@localhost' }))) {
-      console.log('⚙️ Creating default admin user (admin@localhost / adminpass) with Last.fm connection');
-      try {
-        const lastfmUsername = 'leo1011001';
-        const result = await authService.register('admin@localhost', 'admin', 'adminpass', lastfmUsername);
-        if (result.success && result.userId) {
-          await db.updateUser(result.userId, { role: 'admin', approved: true } as any);
-          console.log('✅ Admin user created with lastfmUsername:', lastfmUsername);
+    const lastfmUsername = 'leo1011001';
+    const result = await authService.register('admin@localhost', 'admin', 'adminpass', lastfmUsername);
+    if (result.success && result.userId) {
+      await db.updateUser(result.userId, { role: 'admin', approved: true } as any);
+      console.log('✅ Admin user created. Scheduling background Last.fm sync...');
 
-          // Try to fetch Last.fm info to validate API key and username
-          try {
-            const info = await lastFMService.getUserInfo(lastfmUsername);
-            console.log('Last.fm user info fetched for', lastfmUsername, '->', info?.user?.name || 'NO_NAME');
-          } catch (infoErr) {
-            console.warn('⚠️ Could not fetch Last.fm info for admin user:', infoErr);
-          }
-
-          // Attempt an initial sync to populate sample scrobbles (from last 7 days)
-          try {
-            await syncService.syncUserWithLastFM(result.userId!, lastfmUsername, 7);
-            console.log('✅ Initial sync for admin completed');
-          } catch (syncErr) {
-            console.warn('⚠️ Initial sync failed for admin:', syncErr);
-          }
-        } else {
-          console.warn('⚠️ Could not create admin user:', result.error);
+      // Defer the expensive Last.fm calls so the HTTP server starts immediately
+      setImmediate(async () => {
+        try {
+          const info = await lastFMService.getUserInfo(lastfmUsername);
+          console.log('Last.fm info fetched for', lastfmUsername, '->', info?.user?.name || 'NO_NAME');
+        } catch { /* non-fatal */ }
+        try {
+          await syncService.syncUserWithLastFM(result.userId!, lastfmUsername, 7);
+          console.log('✅ Background initial sync for admin completed');
+        } catch (e) {
+          console.warn('⚠️ Background initial sync failed:', e);
         }
-      } catch (e) {
-        console.warn('⚠️ Admin creation error:', e);
-      }
+      });
     } else {
-      console.log('✅ Admin user exists.');
+      console.warn('⚠️ Could not create admin user:', result.error);
     }
-    // Always ensure the admin@localhost seed user keeps admin role
-    const seedAdmin = await db.users.findOne({ email: 'admin@localhost' });
-    if (seedAdmin && (seedAdmin.role !== 'admin' || !seedAdmin.approved)) {
-      await db.updateUser(seedAdmin._id!.toString(), { role: 'admin', approved: true } as any);
-      console.log('🔧 Re-applied admin role/approved to admin@localhost');
-    }
-  } catch (err) {
-    console.error('DB init error:', err);
+  } catch (e) {
+    console.warn('⚠️ Admin creation error:', e);
   }
 }
 
@@ -595,7 +598,48 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
     else if (topArtists.length <= 2) mood = 'nostalgic';
     else if (topArtists.length >= 5) mood = 'adventurous';
 
-    const content = `🎵 Днес твоят музикален свят се върти около ${topArtistNames}.\n\nС ${totalPlaycount} слушания тази седмица, виждам страст и отдаденост към музиката. Продължавай да откриваш нови звуци!\n\n🎶 Музикална мъдрост за днес: Всяка песен е врата към нов свят.`;
+    // Try AI-generated reading
+    let content = '';
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey && anthropicKey !== 'your_anthropic_api_key_here') {
+      try {
+        const Anthropic = (await import('@anthropic-ai/sdk')).default;
+        const client = new Anthropic({ apiKey: anthropicKey });
+        const topTracksForPrompt = topTracks.slice(0, 5).map((t: any) => {
+          const artist = typeof t.artist === 'string' ? t.artist : t.artist?.name || 'Unknown';
+          return `"${t.name}" от ${artist} (${t.playcount} пъти)`;
+        }).join(', ');
+        const aiResult = await client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Ти си персонален музикален асистент за MuziMind.
+Напиши персонализирано музикално четене/инсайт на БЪЛГАРСКИ ЕЗИК (3–4 изречения) за слушателя.
+
+Данни за седмицата:
+- Топ артисти: ${topArtistNames}
+- Топ песни: ${topTracksForPrompt}
+- Общо слушания: ${totalPlaycount}
+- Настроение: ${mood}
+
+Правила:
+- Пиши НА БЪЛГАРСКИ. Имената на артисти и песни остават в оригинал.
+- Топло, леко поетично, персонализирано — не сухо статистически.
+- Спомени конкретни артисти или песни от данните.
+- 3–4 изречения, без заглавия, само текст.`
+          }]
+        });
+        const aiText = aiResult.content[0].type === 'text' ? aiResult.content[0].text.trim() : '';
+        if (aiText) content = aiText;
+      } catch (e) {
+        console.warn('AI reading generation failed:', (e as any).message);
+      }
+    }
+    // Fallback if AI unavailable
+    if (!content) {
+      content = `🎵 Тази седмица музикалният ти свят се върти около ${topArtistNames}.\n\nС ${totalPlaycount} слушания, виждам страст и отдаденост към музиката. Продължавай да откривашнови звуци!\n\n🎶 Музикална мъдрост за днес: Всяка песен е врата към нов свят.`;
+    }
 
     // Store in DB
     const { ObjectId: ObjId } = await import('mongodb');
@@ -680,6 +724,10 @@ app.get('/api/guest-stats', async (req, res) => {
 // Initialize server and start listening
 console.log('🔄 Starting initServer...');
 initServer()
+  .catch(err => {
+    // DB init failures are logged but should not block the server from starting
+    console.error('⚠️ DB init error (server will still start):', err);
+  })
   .then(() => {
     console.log('✅ initServer promise resolved');
     console.log('✅ Server init complete, now starting listener...');
@@ -722,11 +770,6 @@ initServer()
 
     console.log('✅ Keep-alive interval configured');
     console.log('🎉 Backend initialization complete. Listening for incoming connections...');
-  })
-  .catch(err => {
-    console.error('❌ Server initialization failed:', err);
-    console.error('FULL ERROR:', JSON.stringify(err, null, 2));
-    process.exit(1);
   });
 
 // Log exit event
