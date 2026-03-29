@@ -540,6 +540,122 @@ app.get('/api/reading/latest', requireAuth, async (req, res) => {
   }
 });
 
+// AI listener personality insight (quick, on-demand)
+app.get('/api/reading/insight', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const user = await db.findUserById(userId);
+    if (!user?.lastfmUsername) return res.status(400).json({ error: 'No Last.fm connected' });
+
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey || groqKey === 'your_groq_api_key_here') {
+      return res.status(503).json({ error: 'AI not configured' });
+    }
+
+    // Get quick stats
+    const [topArtistsResp, topTagsResp] = await Promise.allSettled([
+      lastFMService.getTopArtists(user.lastfmUsername, '1month', 5),
+      lastFMService.getTopTags ? lastFMService.getTopTags(user.lastfmUsername, 5) : Promise.resolve(null)
+    ]);
+
+    const topArtists = (topArtistsResp.status === 'fulfilled'
+      ? topArtistsResp.value?.topartists?.artist || []
+      : []).slice(0, 5).map((a: any) => a.name).join(', ');
+
+    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 180,
+        temperature: 0.85,
+        messages: [
+          {
+            role: 'system',
+            content: 'Пишеш САМО на БЪЛГАРСКИ с КИРИЛИЦА. Никога не използвай латиница за български думи. Имената на артисти остават в оригинал.'
+          },
+          {
+            role: 'user',
+            content: `Въз основа на топ артистите за последния месец: ${topArtists || 'разнообразни'}
+
+Напиши кратка "музикална личностна характеристика" за слушателя — 2 изречения. Топло, образно, малко поетично. Без заглавия, без въведение, само характеристиката.`
+          }
+        ]
+      })
+    });
+
+    if (!groqResp.ok) return res.status(503).json({ error: 'AI unavailable' });
+    const data: any = await groqResp.json();
+    const insight = data.choices?.[0]?.message?.content?.trim() || '';
+    res.json({ insight });
+  } catch (error) {
+    console.error('Insight error:', error);
+    res.status(500).json({ error: 'Error generating insight' });
+  }
+});
+
+// AI-generated music wisdom quote
+app.get('/api/reading/wisdom', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const user = await db.findUserById(userId);
+    if (!user?.lastfmUsername) return res.status(400).json({ error: 'No Last.fm connected' });
+
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey || groqKey === 'your_groq_api_key_here') {
+      return res.status(503).json({ error: 'AI not configured' });
+    }
+
+    // Get quick stats
+    const [topArtistsResp, topTracksResp] = await Promise.allSettled([
+      lastFMService.getTopArtists(user.lastfmUsername, '7day', 3),
+      lastFMService.getTopTracks(user.lastfmUsername, '7day', 3)
+    ]);
+
+    const topArtists = (topArtistsResp.status === 'fulfilled'
+      ? topArtistsResp.value?.topartists?.artist || []
+      : []).slice(0, 3).map((a: any) => a.name);
+
+    const topTracks = (topTracksResp.status === 'fulfilled'
+      ? topTracksResp.value?.toptracks?.track || []
+      : []).slice(0, 3).map((t: any) => t.name);
+
+    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 80,
+        temperature: 0.9,
+        messages: [
+          {
+            role: 'system',
+            content: 'Пишеш САМО на BULGARIAN с КИРИЛИЦА. НИКОГА не използвай латиница за български думи. Имената на артисти и песни остават в оригинал.'
+          },
+          {
+            role: 'user',
+            content: `Слушателят с топ артисти: ${topArtists.join(', ') || 'разнообразни'} и топ песни: ${topTracks.join(', ') || 'разнообразни'}.
+
+Напиши ЕДИН ред музикална мъдрост/образ инспириран от неговия музикален свят. Поетично, кратко (макс 15 думи), личностно. Без въведение, без точка, само образът.`
+          }
+        ]
+      })
+    });
+
+    if (!groqResp.ok) return res.status(503).json({ error: 'AI unavailable' });
+    const data: any = await groqResp.json();
+    const wisdom = data.choices?.[0]?.message?.content?.trim() || '';
+    res.json({ wisdom });
+  } catch (error) {
+    console.error('Wisdom error:', error);
+    res.status(500).json({ error: 'Error generating wisdom' });
+  }
+});
+
 // Generate new reading using real Last.fm data
 app.post('/api/reading/generate', requireAuth, async (req, res) => {
   try {
@@ -598,24 +714,30 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
     else if (topArtists.length <= 2) mood = 'nostalgic';
     else if (topArtists.length >= 5) mood = 'adventurous';
 
-    // Try AI-generated reading
+    // Try AI-generated reading via Groq (free, no SDK needed)
     let content = '';
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (anthropicKey && anthropicKey !== 'your_anthropic_api_key_here') {
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey && groqKey.trim().length > 0 && groqKey !== 'your_groq_api_key_here') {
       try {
-        const Anthropic = (await import('@anthropic-ai/sdk')).default;
-        const client = new Anthropic({ apiKey: anthropicKey });
         const topTracksForPrompt = topTracks.slice(0, 5).map((t: any) => {
           const artist = typeof t.artist === 'string' ? t.artist : t.artist?.name || 'Unknown';
           return `"${t.name}" от ${artist} (${t.playcount} пъти)`;
         }).join(', ');
-        const aiResult = await client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 300,
-          messages: [{
-            role: 'user',
-            content: `Ти си персонален музикален асистент за MuziMind.
-Напиши персонализирано музикално четене/инсайт на БЪЛГАРСКИ ЕЗИК (3–4 изречения) за слушателя.
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            max_tokens: 420,
+            temperature: 0.8,
+            messages: [
+              {
+                role: 'system',
+                content: `Ти си персонален музикален асистент за MuziMind. Пишеш САМО на БЪЛГАРСКИ ЕЗИК, използвайки САМО кирилица. НИКОГА не използвай латиница за български думи — всяка дума трябва да е на кирилица. Имената на артисти и песни остават в оригиналния им вид (английски, корейски и т.н.).`
+              },
+              {
+                role: 'user',
+                content: `Напиши персонализирано музикално четене за слушателя — точно 4 абзаца, разделени с празен ред.
 
 Данни за седмицата:
 - Топ артисти: ${topArtistNames}
@@ -623,22 +745,66 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
 - Общо слушания: ${totalPlaycount}
 - Настроение: ${mood}
 
-Правила:
-- Пиши НА БЪЛГАРСКИ. Имената на артисти и песни остават в оригинал.
-- Топло, леко поетично, персонализирано — не сухо статистически.
-- Спомени конкретни артисти или песни от данните.
-- 3–4 изречения, без заглавия, само текст.`
-          }]
+Структура на 4-те абзаца:
+1. Открой кои артисти доминират седмицата и какво говори това за настроението на слушателя.
+2. Анализирай интензивността — ${totalPlaycount} слушания, какво означава това за връзката му с музиката.
+3. Поетична музикална мъдрост или образ, вдъхновен от конкретна песен или артист от списъка.
+4. Кратко пожелание или насърчение за следващата седмица, свързано с музикалното му пътешествие.
+
+Правила: само кирилица за български думи, имена в оригинал, топло и поетично, без заглавия, без номера, само 4 абзаца.`
+              }
+            ]
+          })
         });
-        const aiText = aiResult.content[0].type === 'text' ? aiResult.content[0].text.trim() : '';
-        if (aiText) content = aiText;
+        if (groqResp.ok) {
+          const groqData: any = await groqResp.json();
+          const aiText = groqData.choices?.[0]?.message?.content?.trim() || '';
+          if (aiText) content = aiText;
+        } else {
+          console.warn('Groq reading failed:', await groqResp.text());
+        }
       } catch (e) {
-        console.warn('AI reading generation failed:', (e as any).message);
+        console.warn('Groq reading error:', (e as any).message);
       }
     }
-    // Fallback if AI unavailable
+    // Fallback if AI unavailable — try to generate wisdom line via separate endpoint
     if (!content) {
-      content = `🎵 Тази седмица музикалният ти свят се върти около ${topArtistNames}.\n\nС ${totalPlaycount} слушания, виждам страст и отдаденост към музиката. Продължавай да откривашнови звуци!\n\n🎶 Музикална мъдрост за днес: Всяка песен е врата към нов свят.`;
+      const intensityWord = totalPlaycount > 200 ? 'страст и отдаденост' : totalPlaycount > 80 ? 'любопитство и вкус' : 'нежна привързаност';
+      let wisdomLine = 'Всяка песен е врата към нов свят'; // hardcoded default
+
+      // Try to fetch AI-generated wisdom
+      if (groqKey && groqKey.trim().length > 0 && groqKey !== 'your_groq_api_key_here') {
+        try {
+          const wisdomResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              max_tokens: 80,
+              temperature: 0.9,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'Пишеш САМО на BULGARIAN с КИРИЛИЦА. НИКОГА не използвай латиница за български думи. Имената на артисти остават в оригинал.'
+                },
+                {
+                  role: 'user',
+                  content: `Топ артисти: ${topArtistNames}. Напиши ЕДИН ред музикална мъдрост/образ. Кратко (макс 15 думи), поетично, без въведение, без точка.`
+                }
+              ]
+            })
+          });
+          if (wisdomResp.ok) {
+            const wisdomData: any = await wisdomResp.json();
+            const aiWisdom = wisdomData.choices?.[0]?.message?.content?.trim() || '';
+            if (aiWisdom) wisdomLine = aiWisdom;
+          }
+        } catch (e) {
+          console.warn('Fallback wisdom generation error:', (e as any).message);
+        }
+      }
+
+      content = `🎵 Тази седмица музикалният ти свят се върти около ${topArtistNames}.\n\nС ${totalPlaycount} слушания виждам ${intensityWord} към музиката — не просто фон, а истинска връзка с всяка нота.\n\n🎶 ${wisdomLine}\n\n✨ Нека следващата седмица донесе нови любимци и още повече моменти, когато музиката спира времето.`;
     }
 
     // Store in DB
@@ -673,6 +839,173 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Generate reading error:', error);
     res.status(500).json({ error: 'Error generating reading' });
+  }
+});
+
+// Helper function to generate AI artist insight
+async function generateArtistInsight(artistData: {
+  name: string;
+  genre: string;
+  mood: string;
+  style: string;
+  country: string;
+  formedYear: string | number;
+  tags: string[];
+  listeners: number;
+  globalPlays: number;
+  bio: string;
+}): Promise<{ aiSummary: string; aiMoodAnalysis: string; aiRelatedFacts: string[] } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || apiKey.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    const client = new Anthropic({ apiKey });
+
+    const prompt = `Ти си музикален AI асистент за приложението MuziMind.
+Генерирай кратък персонализиран инсайт за артиста на БЪЛГАРСКИ ЕЗИК.
+
+Артист: ${artistData.name}
+Държава: ${artistData.country || 'неизвестна'}
+Създаден: ${artistData.formedYear || 'неизвестна година'}
+Жанр: ${artistData.genre || 'разнообразен'}
+Настроение: ${artistData.mood || 'неопределено'}
+Стил: ${artistData.style || 'уникален'}
+Тагове: ${artistData.tags.slice(0, 5).join(', ') || 'няма'}
+Слушатели: ${artistData.listeners.toLocaleString()}
+Общо изслушвания: ${artistData.globalPlays.toLocaleString()}
+Кратко био: ${artistData.bio.slice(0, 300)}
+
+Отговори САМО в JSON формат (без markdown):
+{
+  "aiSummary": "Кратко, топло, поетично изречение (макс 80 думи) за артиста - защо е интересен, какво прави музиката му специална. НА БЪЛГАРСКИ.",
+  "aiMoodAnalysis": "Едно изречение (макс 30 думи) описващо настроението/вайба на музиката. НА БЪЛГАРСКИ.",
+  "aiRelatedFacts": ["Факт 1 (макс 15 думи)", "Факт 2 (макс 15 думи)"]
+}
+
+Правила:
+- Пиши НА БЪЛГАРСКИ. Имената остават на оригиналния език.
+- Бъди топъл и ентусиазиран, но не прекалявай.
+- Ако нямаш достатъчно информация, бъди кратък.
+- Върни САМО валиден JSON, без допълнителен текст.`;
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+
+    // Parse JSON response
+    try {
+      const parsed = JSON.parse(text);
+      return {
+        aiSummary: parsed.aiSummary || '',
+        aiMoodAnalysis: parsed.aiMoodAnalysis || '',
+        aiRelatedFacts: Array.isArray(parsed.aiRelatedFacts) ? parsed.aiRelatedFacts.slice(0, 2) : []
+      };
+    } catch {
+      // If JSON parsing fails, try to extract summary from text
+      return {
+        aiSummary: text.slice(0, 200),
+        aiMoodAnalysis: '',
+        aiRelatedFacts: []
+      };
+    }
+  } catch (e) {
+    console.warn('AI artist insight generation failed:', (e as any).message);
+    return null;
+  }
+}
+
+// Artist spotlight — enriched artist data from TheAudioDB + Last.fm + AI
+app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
+  try {
+    const rawArtists = (req.query.artists as string) || '';
+    const artistNames = rawArtists.split(',').map((a: string) => a.trim()).filter(Boolean).slice(0, 8);
+    if (!artistNames.length) return res.json([]);
+
+    const LASTFM_KEY = process.env.LASTFM_API_KEY || '';
+    const AUDIODB_KEY = '2'; // TheAudioDB free public key
+    const useAI = !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 0;
+
+    const results = await Promise.allSettled(
+      artistNames.map(async (artist: string) => {
+        // Fetch from TheAudioDB (free, no signup) and Last.fm in parallel
+        const [audiodbRes, lastfmRes] = await Promise.allSettled([
+          fetch(`https://www.theaudiodb.com/api/v1/json/${AUDIODB_KEY}/search.php?s=${encodeURIComponent(artist)}`)
+            .then(r => r.json()),
+          fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json&autocorrect=1`)
+            .then(r => r.json())
+        ]);
+
+        const adb = audiodbRes.status === 'fulfilled' ? audiodbRes.value?.artists?.[0] : null;
+        const lfm = lastfmRes.status === 'fulfilled' ? lastfmRes.value?.artist : null;
+
+        // Build bio — prefer TheAudioDB (longer, more factual), fall back to Last.fm
+        const rawBio: string = adb?.strBiographyEN || lfm?.bio?.content || lfm?.bio?.summary || '';
+        // Strip Last.fm <a> tags and trim
+        const bio = rawBio
+          .replace(/<a[^>]*>.*?<\/a>/gi, '')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 600);
+
+        // Tags / genres
+        const lastfmTags: string[] = (lfm?.tags?.tag || []).map((t: any) => t.name).slice(0, 5);
+        const adbGenre: string = adb?.strGenre || adb?.strStyle || '';
+        const tags = lastfmTags.length ? lastfmTags : (adbGenre ? [adbGenre] : []);
+
+        // Listeners & plays from Last.fm
+        const listeners = parseInt(lfm?.stats?.listeners || '0');
+        const globalPlays = parseInt(lfm?.stats?.playcount || '0');
+
+        const baseData = {
+          name: adb?.strArtist || lfm?.name || artist,
+          image: adb?.strArtistThumb || adb?.strArtistBanner || '',
+          country: adb?.strCountry || '',
+          formedYear: adb?.intFormedYear || '',
+          genre: adb?.strGenre || '',
+          mood: adb?.strMood || '',
+          style: adb?.strStyle || '',
+          website: adb?.strWebsite || lfm?.url || '',
+          bio,
+          tags,
+          listeners,
+          globalPlays,
+          lastfmUrl: lfm?.url || `https://www.last.fm/music/${encodeURIComponent(artist)}`,
+        };
+
+        // Generate AI insight if available
+        let aiData: { aiSummary?: string; aiMoodAnalysis?: string; aiRelatedFacts?: string[]; aiGeneratedAt?: string } = {};
+        if (useAI) {
+          const insight = await generateArtistInsight(baseData);
+          if (insight) {
+            aiData = {
+              aiSummary: insight.aiSummary,
+              aiMoodAnalysis: insight.aiMoodAnalysis,
+              aiRelatedFacts: insight.aiRelatedFacts,
+              aiGeneratedAt: new Date().toISOString()
+            };
+          }
+        }
+
+        return { ...baseData, ...aiData };
+      })
+    );
+
+    const spotlight = results
+      .filter(r => r.status === 'fulfilled')
+      .map((r: any) => r.value);
+
+    res.json(spotlight);
+  } catch (error) {
+    console.error('Artist spotlight error:', error);
+    res.status(500).json({ error: 'Грешка при зареждане на артист данни' });
   }
 });
 
