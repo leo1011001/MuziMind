@@ -555,14 +555,9 @@ app.get('/api/reading/insight', requireAuth, async (req, res) => {
     }
 
     // Get quick stats
-    const [topArtistsResp, topTagsResp] = await Promise.allSettled([
-      lastFMService.getTopArtists(user.lastfmUsername, '1month', 5),
-      lastFMService.getTopTags ? lastFMService.getTopTags(user.lastfmUsername, 5) : Promise.resolve(null)
-    ]);
+    const topArtistsResp = await lastFMService.getTopArtists(user.lastfmUsername, '1month', 5);
 
-    const topArtists = (topArtistsResp.status === 'fulfilled'
-      ? topArtistsResp.value?.topartists?.artist || []
-      : []).slice(0, 5).map((a: any) => a.name).join(', ');
+    const topArtists = (topArtistsResp?.topartists?.artist || []).slice(0, 5).map((a: any) => a.name).join(', ');
 
     const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
