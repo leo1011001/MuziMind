@@ -51,6 +51,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               <FaClock className="approval-denied-icon" />
               <h3>Чакащо одобрение</h3>
               <p>{error}</p>
+              <p className="approval-hint">Администраторът ще прегледа заявката ти скоро. Опитай да влезеш отново след малко.</p>
             </div>
           ) : (
             <div className="error-message">{error}</div>

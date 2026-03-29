@@ -68,9 +68,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
       <div className="auth-form register-form">
         <div className="pending-approval-message">
           <FaClock className="pending-icon" />
-          <h2>Чакащо одобрение</h2>
+          <h2>Регистрацията е успешна!</h2>
           <p>{pendingMessage}</p>
-          <button onClick={onSwitchToLogin} className="submit-btn" style={{ marginTop: '1rem' }}>
+          <div className="pending-steps">
+            <div className="pending-step">
+              <span className="step-num">1</span>
+              <span>Акаунтът ти е създаден и чака одобрение</span>
+            </div>
+            <div className="pending-step">
+              <span className="step-num">2</span>
+              <span>Администраторът ще прегледа заявката ти</span>
+            </div>
+            <div className="pending-step">
+              <span className="step-num">3</span>
+              <span>След одобрение можеш да влезеш и да използваш MuziMind</span>
+            </div>
+          </div>
+          <button onClick={onSwitchToLogin} className="submit-btn" style={{ marginTop: '1.5rem' }}>
             Към вход
           </button>
         </div>

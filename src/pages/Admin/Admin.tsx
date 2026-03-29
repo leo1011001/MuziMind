@@ -161,14 +161,14 @@ const Admin: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container admin-page">
+      <div className="admin-page">
         <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '3rem' }}>Зареждане…</p>
       </div>
     );
   }
 
   return (
-    <div className="page-container admin-page">
+    <div className="admin-page">
       <div className="admin-header">
         <button className="glass-button back-btn" onClick={() => navigate('/profile')}>
           <FaArrowLeft /> Назад

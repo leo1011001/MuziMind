@@ -1,9 +1,12 @@
+/* Override page-container's large top padding for the auth page */
+.page-container:has(.login-page) {
+  padding-top: 1.5rem;
+}
+
 .login-page {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0.5rem 2rem 4rem;
 }
 
 .login-container {

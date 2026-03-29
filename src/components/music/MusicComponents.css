@@ -117,6 +117,33 @@
   color: #7c3aed;
 }
 
+/* Live indicator dot */
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+  animation: live-pulse 1.8s ease-in-out infinite;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px #4ade80; }
+  50% { opacity: 0.6; transform: scale(1.3); box-shadow: 0 0 18px #4ade80; }
+}
+
+/* Track artwork thumbnail */
+.track-artwork {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
 .artwork-placeholder {
   width: 80px;
   height: 80px;
@@ -739,6 +766,20 @@
   font-weight: 600;
   font-size: 0.95rem;
   color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trending-badge {
+  font-size: 0.7rem;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .prediction-artist-score {

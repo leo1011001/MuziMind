@@ -86,7 +86,7 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="page-container profile-page">
+      <div className="profile-page">
         <p className="auth-prompt">Моля, влезте в системата за да видите профила си.</p>
       </div>
     );
@@ -94,7 +94,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="page-container profile-page">
+      <div className="profile-page">
         <p>Зареждане на профил...</p>
       </div>
     );
@@ -105,7 +105,7 @@ export default function Profile() {
     : '';
 
   return (
-    <div className="page-container profile-page">
+    <div className="profile-page">
       <div className="profile-header">
         <button className="back-btn" onClick={() => navigate('/')}>
           <FaArrowLeft /> Назад

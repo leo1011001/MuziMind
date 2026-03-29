@@ -108,7 +108,7 @@ export const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container center-content">
+      <div className="center-content">
         <div className="glass-spinner"></div>
         <p className="loading-text">Зареждаме твоята музикална вселена...</p>
       </div>
@@ -116,7 +116,7 @@ export const Home: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <div>
       <div className="home-header">
         <div className="header-left">
           <h1 className="welcome-title"><FaMusic /> {getGreeting()}</h1>
