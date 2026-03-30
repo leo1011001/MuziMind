@@ -178,9 +178,23 @@
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
   backdrop-filter: blur(4px);
-  z-index: 50;  /* Ensure buttons always appear above all content */
+  z-index: 50;
+  /* Smooth flowey transition for blur/restore */
+  transition: filter 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.3s ease;
+}
+
+/* Bio-expanded state — buttons blur and fade behind the text */
+.stories-nav-btn.nav-blurred {
+  filter: blur(5px);
+  opacity: 0.18;
+  pointer-events: none;
+  box-shadow: none;
 }
 
 .stories-nav-left {
@@ -191,7 +205,7 @@
   right: 12px;
 }
 
-.stories-nav-btn:hover {
+.stories-nav-btn:not(.nav-blurred):hover {
   background: rgba(0,0,0,0.65);
   color: #fff;
   border-color: rgba(255,255,255,0.45);
@@ -199,7 +213,7 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
-.stories-nav-btn:active {
+.stories-nav-btn:not(.nav-blurred):active {
   transform: translateY(-50%) scale(0.95);
 }
 
@@ -207,27 +221,13 @@
 .stories-content {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  /* max-height = card height minus top-bar zone; overflow scrolls so text is never clipped */
-  max-height: 72%;
+  max-height: 65%;
   overflow-y: auto;
   scrollbar-width: none;
   padding: 20px 20px 24px;
   z-index: 8;
 }
 .stories-content::-webkit-scrollbar { display: none; }
-
-.stories-title {
-  font-size: 1.9rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 10px;
-  text-shadow:
-    0 2px 4px rgba(0,0,0,0.8),
-    0 4px 12px rgba(0,0,0,0.6),
-    0 0 40px rgba(0,0,0,0.5);
-  line-height: 1.1;
-  -webkit-text-fill-color: #fff;
-}
 
 .stories-meta {
   display: flex;
@@ -344,15 +344,6 @@
 /* Light theme uses same dark text overlays for readability over images */
 [data-theme="light"] .stories-gradient-bottom {
   background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.88) 40%, rgba(0,0,0,0.55) 65%, transparent 100%);
-}
-
-[data-theme="light"] .stories-title {
-  color: #fff;
-  -webkit-text-fill-color: #fff;
-  text-shadow:
-    0 2px 4px rgba(0,0,0,0.9),
-    0 4px 14px rgba(0,0,0,0.7),
-    0 0 50px rgba(0,0,0,0.6);
 }
 
 [data-theme="light"] .stories-meta-chip {
