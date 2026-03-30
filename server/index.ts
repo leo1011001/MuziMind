@@ -842,84 +842,7 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
   }
 });
 
-// Helper function to generate AI artist insight
-async function generateArtistInsight(artistData: {
-  name: string;
-  genre: string;
-  mood: string;
-  style: string;
-  country: string;
-  formedYear: string | number;
-  tags: string[];
-  listeners: number;
-  globalPlays: number;
-  bio: string;
-}): Promise<{ aiSummary: string; aiMoodAnalysis: string; aiRelatedFacts: string[] } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey.trim().length === 0) {
-    return null;
-  }
-
-  try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
-
-    const prompt = `Ти си музикален AI асистент за приложението MuziMind.
-Генерирай кратък персонализиран инсайт за артиста на БЪЛГАРСКИ ЕЗИК.
-
-Артист: ${artistData.name}
-Държава: ${artistData.country || 'неизвестна'}
-Създаден: ${artistData.formedYear || 'неизвестна година'}
-Жанр: ${artistData.genre || 'разнообразен'}
-Настроение: ${artistData.mood || 'неопределено'}
-Стил: ${artistData.style || 'уникален'}
-Тагове: ${artistData.tags.slice(0, 5).join(', ') || 'няма'}
-Слушатели: ${artistData.listeners.toLocaleString()}
-Общо изслушвания: ${artistData.globalPlays.toLocaleString()}
-Кратко био: ${artistData.bio.slice(0, 300)}
-
-Отговори САМО в JSON формат (без markdown):
-{
-  "aiSummary": "Кратко, топло, поетично изречение (макс 80 думи) за артиста - защо е интересен, какво прави музиката му специална. НА БЪЛГАРСКИ.",
-  "aiMoodAnalysis": "Едно изречение (макс 30 думи) описващо настроението/вайба на музиката. НА БЪЛГАРСКИ.",
-  "aiRelatedFacts": ["Факт 1 (макс 15 думи)", "Факт 2 (макс 15 думи)"]
-}
-
-Правила:
-- Пиши НА БЪЛГАРСКИ. Имената остават на оригиналния език.
-- Бъди топъл и ентусиазиран, но не прекалявай.
-- Ако нямаш достатъчно информация, бъди кратък.
-- Върни САМО валиден JSON, без допълнителен текст.`;
-
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
-
-    // Parse JSON response
-    try {
-      const parsed = JSON.parse(text);
-      return {
-        aiSummary: parsed.aiSummary || '',
-        aiMoodAnalysis: parsed.aiMoodAnalysis || '',
-        aiRelatedFacts: Array.isArray(parsed.aiRelatedFacts) ? parsed.aiRelatedFacts.slice(0, 2) : []
-      };
-    } catch {
-      // If JSON parsing fails, try to extract summary from text
-      return {
-        aiSummary: text.slice(0, 200),
-        aiMoodAnalysis: '',
-        aiRelatedFacts: []
-      };
-    }
-  } catch (e) {
-    console.warn('AI artist insight generation failed:', (e as any).message);
-    return null;
-  }
-}
+// Anthropic SDK removed - all AI generation now uses Groq API (llama-3.3-70b-versatile)
 
 // Artist spotlight — enriched artist data from TheAudioDB + Last.fm + AI
 app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
@@ -930,7 +853,6 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
 
     const LASTFM_KEY = process.env.LASTFM_API_KEY || '';
     const AUDIODB_KEY = '2'; // TheAudioDB free public key
-    const useAI = !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 0;
 
     const results = await Promise.allSettled(
       artistNames.map(async (artist: string) => {
@@ -980,21 +902,7 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
           lastfmUrl: lfm?.url || `https://www.last.fm/music/${encodeURIComponent(artist)}`,
         };
 
-        // Generate AI insight if available
-        let aiData: { aiSummary?: string; aiMoodAnalysis?: string; aiRelatedFacts?: string[]; aiGeneratedAt?: string } = {};
-        if (useAI) {
-          const insight = await generateArtistInsight(baseData);
-          if (insight) {
-            aiData = {
-              aiSummary: insight.aiSummary,
-              aiMoodAnalysis: insight.aiMoodAnalysis,
-              aiRelatedFacts: insight.aiRelatedFacts,
-              aiGeneratedAt: new Date().toISOString()
-            };
-          }
-        }
-
-        return { ...baseData, ...aiData };
+        return baseData;
       })
     );
 
