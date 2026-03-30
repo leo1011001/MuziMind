@@ -8,6 +8,18 @@
   gap: 1rem;
   margin-bottom: 3rem;
   flex-wrap: wrap;
+  animation: fadeSlideDown 0.5s ease forwards;
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .back-btn {
@@ -20,11 +32,16 @@
   border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .back-btn:hover {
   background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-3px);
+}
+
+.back-btn:active {
+  transform: translateX(-1px) scale(0.98);
 }
 
 .page-header h1 {
@@ -50,12 +67,30 @@
   padding: 2rem;
   text-align: center;
   backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: scaleFadeIn 0.4s ease backwards;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.15s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.25s; }
+
+@keyframes scaleFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
   border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card.big {
@@ -115,12 +150,36 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: slideInFromLeft 0.4s ease backwards;
+}
+
+.list-item:nth-child(1) { animation-delay: 0.05s; }
+.list-item:nth-child(2) { animation-delay: 0.1s; }
+.list-item:nth-child(3) { animation-delay: 0.15s; }
+.list-item:nth-child(4) { animation-delay: 0.2s; }
+.list-item:nth-child(5) { animation-delay: 0.25s; }
+.list-item:nth-child(6) { animation-delay: 0.3s; }
+.list-item:nth-child(7) { animation-delay: 0.35s; }
+.list-item:nth-child(8) { animation-delay: 0.4s; }
+.list-item:nth-child(9) { animation-delay: 0.45s; }
+.list-item:nth-child(10) { animation-delay: 0.5s; }
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .list-item:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(6px);
 }
 
 .rank {
@@ -167,7 +226,25 @@
   border-radius: 20px;
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: popIn 0.3s ease backwards;
+}
+
+.genre-tag:nth-child(1) { animation-delay: 0.1s; }
+.genre-tag:nth-child(2) { animation-delay: 0.15s; }
+.genre-tag:nth-child(3) { animation-delay: 0.2s; }
+.genre-tag:nth-child(4) { animation-delay: 0.25s; }
+.genre-tag:nth-child(5) { animation-delay: 0.3s; }
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .stats-lists-grid {
@@ -195,5 +272,10 @@
 
 .genre-tag:hover {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
-  transform: scale(1.05);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+}
+
+.genre-tag:active {
+  transform: scale(1.02);
 }

@@ -199,7 +199,29 @@ export class DataSyncService {
         .toArray(),
       db.findUserById(userId)
     ]);
-    const topArtists = topArtistsRaw.filter(a => a.artist && a.artist.trim() !== '');
+    let topArtists = topArtistsRaw.filter(a => a.artist && a.artist.trim() !== '');
+
+    // Enrich artists that have no tags yet — fetch from Last.fm and persist
+    const artistsNeedingTags = topArtists.filter(a => !a.tags || a.tags.length === 0).slice(0, 5);
+    if (artistsNeedingTags.length > 0) {
+      try {
+        const { lastFMService: lfm } = await import('./lastfm');
+        await Promise.allSettled(artistsNeedingTags.map(async (a) => {
+          const info = await lfm.getArtistInfo(a.artist);
+          const tags: string[] = (info?.artist?.tags?.tag || [])
+            .map((t: any) => t.name?.toLowerCase())
+            .filter(Boolean)
+            .slice(0, 6);
+          if (tags.length > 0) {
+            await db.artistStats.updateOne(
+              { _id: a._id },
+              { $set: { tags } }
+            );
+            a.tags = tags; // update in-memory for this request
+          }
+        }));
+      } catch { /* tag enrichment is best-effort */ }
+    }
     // Calculate listening hours
     const listeningHours = Array(24).fill(0);
     scrobbles.forEach(scrobble => {
@@ -241,6 +263,16 @@ export class DataSyncService {
       })),
       topSongs,
       topTags: topArtists.flatMap(a => a.tags || []).filter((t, i, arr) => arr.indexOf(t) === i).slice(0, 10),
+      topTagsWithCounts: (() => {
+        const tagMap: Record<string, number> = {};
+        topArtists.forEach(a => (a.tags || []).forEach((tag: string) => {
+          tagMap[tag] = (tagMap[tag] || 0) + a.playCount;
+        }));
+        return Object.entries(tagMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([tag, count]) => ({ tag, count }));
+      })(),
       listeningHours,
       recentScrobbles: scrobbles.slice(0, 20)
     };
@@ -253,6 +285,7 @@ export const syncService = new DataSyncService();
 
 // ─── AI Prediction helper ─────────────────────────────────────────────────
 
+/** Call Groq (free tier, no SDK needed — pure fetch) and return a Bulgarian prediction string. */
 async function generateAIPrediction(context: {
   topArtists: Array<{ name: string; score: number; trending: boolean }>;
   topGenres: string[];
@@ -266,61 +299,70 @@ async function generateAIPrediction(context: {
   listeningPatterns: { morning: number; afternoon: number; evening: number; night: number };
   currentlyPlaying: { name: string; artist: string } | null;
 }): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'your_anthropic_api_key_here') {
-    return null as any; // signal fallback
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey || apiKey.trim().length === 0 || apiKey === 'your_groq_api_key_here') {
+    return null as any;
   }
-  try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
 
-    const artistList = context.topArtists
-      .slice(0, 5)
-      .map((a, i) => `${i + 1}. ${a.name}${a.trending ? ' (trending ↑)' : ''}`)
-      .join('\n');
+  const artistList = context.topArtists
+    .slice(0, 5)
+    .map((a, i) => `${i + 1}. ${a.name}${a.trending ? ' (trending ↑)' : ''}`)
+    .join('\n');
 
-    const patternSummary = [
-      context.listeningPatterns.morning   > 0 ? `сутрин: ${context.listeningPatterns.morning} слушания` : null,
-      context.listeningPatterns.afternoon > 0 ? `следобед: ${context.listeningPatterns.afternoon}` : null,
-      context.listeningPatterns.evening   > 0 ? `вечер: ${context.listeningPatterns.evening}` : null,
-      context.listeningPatterns.night     > 0 ? `нощ: ${context.listeningPatterns.night}` : null,
-    ].filter(Boolean).join(', ');
+  const patternSummary = [
+    context.listeningPatterns.morning   > 0 ? `сутрин: ${context.listeningPatterns.morning}` : null,
+    context.listeningPatterns.afternoon > 0 ? `следобед: ${context.listeningPatterns.afternoon}` : null,
+    context.listeningPatterns.evening   > 0 ? `вечер: ${context.listeningPatterns.evening}` : null,
+    context.listeningPatterns.night     > 0 ? `нощ: ${context.listeningPatterns.night}` : null,
+  ].filter(Boolean).join(', ');
 
-    const nowPlayingLine = context.currentlyPlaying
-      ? `Слуша в момента: "${context.currentlyPlaying.name}" от ${context.currentlyPlaying.artist}.`
-      : '';
+  const nowPlayingLine = context.currentlyPlaying
+    ? `Слуша в момента: "${context.currentlyPlaying.name}" от ${context.currentlyPlaying.artist}.`
+    : '';
 
-    const prompt = `Ти си персонален музикален асистент за MuziMind — приложение за анализ на музикални навици.
-Напиши кратко, топло и персонализирано предсказание/инсайт на БЪЛГАРСКИ ЕЗИК (2–3 изречения) за слушателя, базирано на данните им.
+  const prompt = `Ти си персонален музикален асистент за MuziMind.
+Напиши кратко, топло предсказание на БЪЛГАРСКИ (2–3 изречения) за слушателя.
 
-Данни за слушателя:
-- Ден и час: ${context.currentDay}, ${context.currentHour}:00 ч. (${context.timePeriod})
-- Пиков час на слушане: ${context.peakHour}:00 ч. (вторичен: ${context.secondPeak}:00 ч.)
-- Разпределение по деня: ${patternSummary || 'няма данни'}
-- Топ артисти (последна седмица):
-${artistList}
-- Топ жанрове/тагове: ${context.topGenres.slice(0, 3).join(', ') || 'разнообразни'}
-- Общо изслушвания: ${context.totalScrobbles}
-- Интензивност: ${context.intensityLevel}
+Данни:
+- ${context.currentDay}, ${context.currentHour}:00 ч. (${context.timePeriod})
+- Пиков час: ${context.peakHour}:00 ч.
+- Слушания по деня: ${patternSummary || 'няма данни'}
+- Топ артисти:\n${artistList}
+- Жанрове: ${context.topGenres.slice(0, 3).join(', ') || 'разнообразни'}
+- Общо: ${context.totalScrobbles} изслушвания (${context.intensityLevel})
 ${nowPlayingLine}
 
-Правила:
-- Пиши НА БЪЛГАРСКИ. Имената на артистите остават в оригинала им (английски или друг).
-- Бъди топъл, леко поетичен — не сухо статистически.
-- Спомени 1–2 конкретни артиста от списъка.
-- Ако слушателят е активен точно сега или в пиковия си час, отбележи го.
-- Максимум 3 изречения. Без заглавия, без списъци, само текст.`;
+Правила: само БЪЛГАРСКИ, имена на артисти в оригинал, топло и поетично, спомени 1–2 артиста, макс 3 изречения, без заглавия.`;
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }]
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 220,
+        temperature: 0.75,
+        messages: [
+          {
+            role: 'system',
+            content: 'Пишеш САМО на БЪЛГАРСКИ ЕЗИК с КИРИЛИЦА. НИКОГА не използвай латиница за български думи. Имената на артисти остават в оригиналния им вид.'
+          },
+          { role: 'user', content: prompt }
+        ],
+      }),
     });
-
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
-    return text || null as any;
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.warn('Groq prediction failed:', err);
+      return null as any;
+    }
+    const data: any = await resp.json();
+    return data.choices?.[0]?.message?.content?.trim() || null as any;
   } catch (e) {
-    console.warn('AI prediction failed, falling back to template:', (e as any).message);
+    console.warn('Groq prediction error:', (e as any).message);
     return null as any;
   }
 }
@@ -445,6 +487,7 @@ function timeBucket(hour: number): number {
   const topArtist = recommendedArtists[0]?.name || 'unknown';
   
   // Calculate listening intensity
+  const totalScrobbles = totalListenings; // alias used by AI context below
   const intensityLevel = totalListenings > 1000 ? 'passionate' : totalListenings > 500 ? 'active' : 'regular';
   
   // Get top 3 genres for deeper recommendations
@@ -557,6 +600,7 @@ function timeBucket(hour: number): number {
     peakHour,
     secondPeak,
     topGenres: topThreeGenres,
+    topTagsWithCounts: (stats as any).topTagsWithCounts || [],
     topArtist,
     totalScrobbles: stats.totalScrobbles,
     dailyPrediction: enhancedPrediction,

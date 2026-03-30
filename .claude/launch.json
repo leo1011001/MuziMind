@@ -9,8 +9,8 @@
     },
     {
       "name": "Backend (Express / ts-node)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--prefix", "server", "ts-node", "--transpile-only", "server/index.ts"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "server", "run", "server"],
       "port": 3000
     }
   ]

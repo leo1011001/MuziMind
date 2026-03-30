@@ -56,8 +56,8 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
           <div className="empty-icon"><FaMusic /></div>
           <p>{language === 'en' ? 'No scrobbles yet' : 'Все още нямаш слушания'}</p>
           <small>
-            {language === 'en' 
-              ? 'Connect Last.fm to see your listening history' 
+            {language === 'en'
+              ? 'Connect Last.fm to see your listening history'
               : 'Свържи Last.fm, за да видиш историята си'}
           </small>
         </div>
@@ -66,7 +66,7 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
           {displayedScrobbles.map((scrobble, index) => (
             <div key={index} className="scrobble-item">
               <div className="scrobble-rank">{index + 1}</div>
-              
+
               <div className="scrobble-info">
                 <div className="scrobble-track">
                   <span className="track-name">{scrobble.track.name}</span>
@@ -84,7 +84,7 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
                   )}
                 </div>
               </div>
-              
+
               {scrobble.track.album && (
                 <div className="scrobble-album">
                   {scrobble.track.album}
@@ -92,14 +92,6 @@ export const RecentScrobbles: React.FC<RecentScrobblesProps> = ({
               )}
             </div>
           ))}
-        </div>
-      )}
-      
-      {scrobbles.length > maxItems && (
-        <div className="scrobbles-footer">
-          <button className="view-all-btn">
-            {language === 'en' ? 'View All' : 'Виж всички'} →
-          </button>
         </div>
       )}
     </div>

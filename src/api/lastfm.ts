@@ -45,6 +45,18 @@ export class LastFMService {
       const response = await fetch(`${BASE_URL}?${params}`);
       return response.json();
     }
+
+  async getArtistInfo(artist: string): Promise<any> {
+    const params = new URLSearchParams({
+      method: 'artist.getinfo',
+      artist,
+      api_key: this.apiKey,
+      format: 'json',
+      autocorrect: '1'
+    });
+    const response = await fetch(`${BASE_URL}?${params}`);
+    return response.json();
+  }
   private apiKey: string;
   
   constructor() {

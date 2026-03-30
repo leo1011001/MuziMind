@@ -358,13 +358,13 @@
   background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: var(--transition-smooth);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .scrobble-item:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
-  transform: translateX(4px);
+  transform: translateX(6px);
 }
 
 .scrobble-rank {
@@ -746,12 +746,13 @@
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .prediction-artist-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  transform: translateX(4px);
+  transform: translateX(6px);
+  border-color: rgba(99, 102, 241, 0.2);
 }
 
 .prediction-artist-rank {
