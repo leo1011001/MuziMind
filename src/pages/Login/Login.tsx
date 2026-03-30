@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
@@ -8,7 +8,14 @@ const Login: React.FC = () => {
   const { loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
 
-  if (loading) {
+  // Only block rendering during the *initial* session check, not during
+  // login/register actions — otherwise LoginForm unmounts and clears its state.
+  const initialCheckDone = useRef(false);
+  useEffect(() => {
+    if (!loading) initialCheckDone.current = true;
+  }, [loading]);
+
+  if (!initialCheckDone.current && loading) {
     return (
       <div className="login-page">
         <div className="loading-spinner">Зареждане...</div>
@@ -19,10 +26,6 @@ const Login: React.FC = () => {
   return (
     <div className="login-page">
       <div className="login-container">
-        <div className="language-toggle-container">
-          {/* LanguageToggle removed */}
-        </div>
-
         {isLogin ? (
           <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
         ) : (

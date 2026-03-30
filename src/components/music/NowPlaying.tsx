@@ -1,103 +1,101 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaPlay, FaMusic, FaClock } from 'react-icons/fa';
+import { FaMusic, FaClock, FaExternalLinkAlt } from 'react-icons/fa';
 import './MusicComponents.css';
 
-interface NowPlayingTrack {
+interface TrackData {
   name: string;
   artist: string;
   album: string;
-  nowplaying?: boolean;
-  date?: string;
   url?: string;
+  image?: string;
 }
+
+interface NowPlayingData {
+  currentlyPlaying: {
+    track: TrackData;
+    currentlyPlaying: boolean;
+    playedAt: string;
+    syncedAt: string;
+  } | null;
+  lastSync: string;
+}
+
+const POLL_INTERVAL = 15_000; // 15 seconds
 
 export const NowPlaying: React.FC = () => {
   const { user } = useAuth();
-  const [track, setTrack] = useState<NowPlayingTrack | null>(null);
+  const [data, setData] = useState<NowPlayingData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isCurrentlyPlaying, setIsCurrentlyPlaying] = useState(false);
 
   useEffect(() => {
-    if (user?.lastfmUsername) {
-      fetchNowPlaying();
-      const interval = setInterval(fetchNowPlaying, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [user?.lastfmUsername]);
+    if (!user) return;
+    fetchNowPlaying();
+    const id = setInterval(fetchNowPlaying, POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [user]);
 
   const fetchNowPlaying = async () => {
-    if (!user?.lastfmUsername) return;
-
     try {
       setLoading(true);
-      const response = await fetch(`/api/stats`, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const recent = data.recentScrobbles?.[0];
-        if (recent) {
-          // Check if track has @attr.nowplaying flag which indicates it's currently being streamed
-          const nowPlayingFlag = recent['@attr']?.nowplaying === 'true';
-          
-          setTrack({
-            name: recent.track.name,
-            artist: recent.track.artist,
-            album: recent.track.album,
-            nowplaying: nowPlayingFlag,
-            date: recent.timestamp,
-            url: recent.track?.url
-          });
-          // Only show as currently playing if Last.fm explicitly marks it with nowplaying flag
-          setIsCurrentlyPlaying(nowPlayingFlag);
-        }
+      const res = await fetch('/api/now-playing', { credentials: 'include' });
+      if (res.ok) {
+        setData(await res.json());
       }
-    } catch (error) {
-      console.error('Error fetching now playing:', error);
+    } catch {
+      // silent — keep showing last state
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user?.lastfmUsername) {
-    return null;
+  if (!user) return null;
+  if (loading && !data) {
+    return (
+      <div className="glass-card now-playing-card">
+        <div className="now-playing-header">
+          <FaMusic className="icon" />
+          <h3>Зареждане...</h3>
+        </div>
+      </div>
+    );
   }
+  if (!data?.currentlyPlaying) return null;
 
-  if (loading && !track) {
-    return <div className="glass-card now-playing-card">Зареждане...</div>;
-  }
-
-  if (!track) {
-    return null;
-  }
+  const { track, currentlyPlaying: isPlaying, playedAt } = data.currentlyPlaying;
+  const timeStr = playedAt ? new Date(playedAt).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
-    <div className={`glass-card now-playing-card ${isCurrentlyPlaying ? 'active' : ''}`}>
+    <div className={`glass-card now-playing-card ${isPlaying ? 'active' : ''}`}>
       <div className="now-playing-header">
-        <FaMusic className="icon" />
-        <h3>{isCurrentlyPlaying ? 'Слушане' : 'Последен трак'}</h3>
+        <FaMusic className="icon" style={{ color: isPlaying ? '#4ade80' : undefined }} />
+        <h3>{isPlaying ? 'Слуша се сега' : 'Последен трак'}</h3>
+        {isPlaying && <span className="live-dot" />}
       </div>
 
       <div className="track-info">
+        {track.image && (
+          <img
+            src={track.image}
+            alt={track.album || track.name}
+            className="track-artwork"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
         <div className="track-name">{track.name}</div>
         <div className="track-artist">{track.artist}</div>
-        <div className="track-album">{track.album}</div>
+        {track.album && <div className="track-album">{track.album}</div>}
       </div>
 
-      {isCurrentlyPlaying && (
-        <button className="play-button play-resume">
-          <FaPlay /> Продължи слушането
-        </button>
-      )}
-
-      {!isCurrentlyPlaying && track.date && (
+      {!isPlaying && timeStr && (
         <div className="track-time">
-          <FaClock /> {new Date(track.date).toLocaleTimeString()}
+          <FaClock /> {timeStr}
         </div>
       )}
 
       {track.url && (
         <a href={track.url} target="_blank" rel="noopener noreferrer" className="last-fm-link">
-          Виж на Last.fm
+          <FaExternalLinkAlt /> Виж на Last.fm
         </a>
       )}
     </div>

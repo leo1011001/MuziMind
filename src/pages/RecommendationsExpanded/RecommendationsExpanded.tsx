@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaMusic, FaClock, FaChartBar, FaSun, FaCloudSun, FaCloudMoon, FaMoon } from 'react-icons/fa';
+import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaMusic, FaClock, FaChartBar, FaSun, FaCloudSun, FaCloudMoon, FaMoon, FaNewspaper, FaArrowUp } from 'react-icons/fa';
+import { ArtistStories, ArtistSpotlight } from '../../components/ui/ArtistStories/ArtistStories';
 import './Recommendations.css';
 
 const intensityLabels: Record<string, string> = {
@@ -31,6 +32,9 @@ export const RecommendationsExpanded: React.FC = () => {
   const navigate = useNavigate();
   const [prediction, setPrediction] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [spotlight, setSpotlight] = useState<ArtistSpotlight[]>([]);
+  const [showStories, setShowStories] = useState(false);
+  const [storiesStartIndex, setStoriesStartIndex] = useState(0);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -43,6 +47,20 @@ export const RecommendationsExpanded: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           setPrediction(data);
+
+          // Fetch artist spotlight data for the recommended artists
+          if (data.recommendedArtists?.length > 0) {
+            const artistNames = data.recommendedArtists.map((a: any) => a.name).join(',');
+            try {
+              const spotlightRes = await fetch(`${API_URL}/api/artist-spotlight?artists=${encodeURIComponent(artistNames)}`, { credentials: 'include' });
+              if (spotlightRes.ok) {
+                const spotlightData = await spotlightRes.json();
+                setSpotlight(spotlightData);
+              }
+            } catch (e) {
+              console.log('Spotlight fetch failed:', e);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching prediction:', error);
@@ -56,7 +74,7 @@ export const RecommendationsExpanded: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="page-container recommendations-page">
+      <div className="recommendations-page">
         <p className="auth-prompt">Моля, влезте в системата</p>
       </div>
     );
@@ -64,7 +82,7 @@ export const RecommendationsExpanded: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container recommendations-page">
+      <div className="recommendations-page">
         <div className="rec-loading">
           <div className="rec-loading-spinner"></div>
           <p>Генериране на персонализирани препоръки...</p>
@@ -79,7 +97,7 @@ export const RecommendationsExpanded: React.FC = () => {
   const intensityIcon = intensityIcons[prediction?.intensityLevel] || <FaHeadphones />;
 
   return (
-    <div className="page-container recommendations-page">
+    <div className="recommendations-page">
       <div className="rec-header">
         <button className="glass-button back-btn" onClick={() => navigate('/')}>
           ← Назад към начало
@@ -91,6 +109,29 @@ export const RecommendationsExpanded: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── Artist Stories bubble strip ──────────────────── */}
+      {spotlight.length > 0 && (
+        <div className="rec-stories-strip">
+          <p className="rec-stories-strip-label"><FaMicrophone /> Твоите артисти — натисни за история</p>
+          <div className="rec-stories-bubbles">
+            {spotlight.map((artist, i) => (
+              <button
+                key={i}
+                className="rec-story-bubble"
+                onClick={() => { setStoriesStartIndex(i); setShowStories(true); }}
+                title={artist.name}
+              >
+                {artist.image
+                  ? <img src={artist.image} alt={artist.name} className="rec-story-img" />
+                  : <div className="rec-story-placeholder"><FaMusic /></div>
+                }
+                <span className="rec-story-name">{artist.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {prediction && (
         <div className="rec-content">
@@ -144,20 +185,72 @@ export const RecommendationsExpanded: React.FC = () => {
 
           {/* Recommended Artists */}
           <div className="glass-card rec-artists-section">
-            <h2><FaMicrophone /> Препоръчани артисти</h2>
+            <div className="rec-artists-header">
+              <h2><FaMicrophone /> Препоръчани артисти</h2>
+              {spotlight.length > 0 && (
+                <button
+                  className="glass-button rec-spotlight-btn"
+                  onClick={() => { setStoriesStartIndex(0); setShowStories(true); }}
+                >
+                  <FaNewspaper /> Виж истории
+                </button>
+              )}
+            </div>
             <div className="rec-artist-grid">
               {prediction.recommendedArtists?.map((artist: any, i: number) => (
-                <div key={i} className="rec-artist-card">
+                <div
+                  key={i}
+                  className="rec-artist-card"
+                  onClick={() => {
+                    if (spotlight.length > 0) {
+                      setStoriesStartIndex(i);
+                      setShowStories(true);
+                    }
+                  }}
+                  style={{ cursor: spotlight.length > 0 ? 'pointer' : 'default' }}
+                >
                   <div className="rec-artist-rank">#{i + 1}</div>
-                  <div className="rec-artist-name">{artist.name}</div>
-                  <div className="rec-artist-score">{artist.score} слушания</div>
+                  <div className="rec-artist-name">
+                    {artist.name}
+                    {artist.trending && <FaArrowUp className="trending-badge" />}
+                  </div>
+                  <div className="rec-artist-score">
+                    {artist.score < 1
+                      ? `${Math.round(artist.score * 100)}%`
+                      : artist.score}
+                  </div>
+                  {spotlight.length > 0 && <div className="rec-artist-story-hint">→ история</div>}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Top Genres */}
-          {prediction.topGenres && prediction.topGenres.length > 0 && (
+          {/* Top Genres / Tags — visual bar chart */}
+          {prediction.topTagsWithCounts?.length > 0 && (
+            <div className="glass-card rec-genres-section">
+              <h2><FaMusic /> Топ жанрове</h2>
+              <div className="rec-genre-bars">
+                {(() => {
+                  const tags: Array<{ tag: string; count: number }> = prediction.topTagsWithCounts.slice(0, 8);
+                  const max = tags[0]?.count || 1;
+                  return tags.map((t, i) => (
+                    <div key={i} className="rec-genre-bar-row">
+                      <span className="rec-genre-bar-label">{t.tag}</span>
+                      <div className="rec-genre-bar-track">
+                        <div
+                          className="rec-genre-bar-fill"
+                          style={{ width: `${Math.round((t.count / max) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="rec-genre-bar-count">{t.count}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
+          {/* Fallback plain tags if no counts */}
+          {!prediction.topTagsWithCounts?.length && prediction.topGenres?.length > 0 && (
             <div className="glass-card rec-genres-section">
               <h2><FaMusic /> Любими жанрове</h2>
               <div className="rec-genres-list">
@@ -168,6 +261,15 @@ export const RecommendationsExpanded: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Artist Stories Modal */}
+      {showStories && spotlight.length > 0 && (
+        <ArtistStories
+          artists={spotlight}
+          startIndex={storiesStartIndex}
+          onClose={() => setShowStories(false)}
+        />
       )}
     </div>
   );

@@ -1,0 +1,450 @@
+/* ============================= */
+/*   ARTIST STORIES — Instagram  */
+/* ============================= */
+
+.stories-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: storiesOverlayIn 0.2s ease;
+}
+
+@keyframes storiesOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Card ─────────────────────────────────────────── */
+.stories-card {
+  position: relative;
+  width: min(420px, 96vw);
+  height: min(720px, 92dvh);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.08);
+  animation: storiesCardIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+}
+
+@keyframes storiesCardIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* ── Background ───────────────────────────────────── */
+.stories-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center top;
+  background-color: #1a0a2e;
+  transition: background-image 0.3s ease;
+}
+
+.stories-no-image {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  color: rgba(180, 150, 255, 0.3);
+  background: radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.25), transparent 60%),
+              linear-gradient(180deg, #1a0a2e, #0d0520);
+}
+
+/* ── Gradients ────────────────────────────────────── */
+.stories-gradient-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 160px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.stories-gradient-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 70%;
+  background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.5) 60%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Progress bars ────────────────────────────────── */
+.stories-progress-row {
+  position: absolute;
+  top: 14px;
+  left: 14px; right: 14px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.stories-progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}
+
+.stories-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: #fff;
+  transition: width 0.05s linear;
+}
+
+/* ── Top bar ──────────────────────────────────────── */
+.stories-top-bar {
+  position: absolute;
+  top: 26px; left: 14px; right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.stories-artist-pill {
+  display: flex;
+  flex-direction: column;
+}
+
+.stories-artist-counter {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.04em;
+}
+
+.stories-artist-name-small {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+}
+
+.stories-close {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+.stories-close:hover { background: rgba(0,0,0,0.65); }
+
+/* ── Click zones (separate left/right for proper event handling) ── */
+.stories-zone {
+  position: absolute;
+  top: 80px;  /* Below progress bar and top bar */
+  bottom: 0;
+  z-index: 4;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.stories-zone-left {
+  left: 0;
+  width: 35%;
+}
+
+.stories-zone-right {
+  right: 0;
+  width: 35%;
+}
+
+/* ── Navigation buttons (separate layer for clickability) ── */
+.stories-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  z-index: 50;  /* Ensure buttons always appear above all content */
+}
+
+.stories-nav-left {
+  left: 12px;
+}
+
+.stories-nav-right {
+  right: 12px;
+}
+
+.stories-nav-btn:hover {
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border-color: rgba(255,255,255,0.45);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.stories-nav-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* ── Content ──────────────────────────────────────── */
+.stories-content {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  /* max-height = card height minus top-bar zone; overflow scrolls so text is never clipped */
+  max-height: 72%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 20px 20px 24px;
+  z-index: 8;
+}
+.stories-content::-webkit-scrollbar { display: none; }
+
+.stories-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 10px;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,0.8),
+    0 4px 12px rgba(0,0,0,0.6),
+    0 0 40px rgba(0,0,0,0.5);
+  line-height: 1.1;
+  -webkit-text-fill-color: #fff;
+}
+
+.stories-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.stories-meta-chip {
+  font-size: 0.72rem;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+}
+
+.stories-stats {
+  display: flex;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 10px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+.stories-stats span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stories-bio {
+  font-size: 0.83rem;
+  color: #fff;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  /* no max-height — parent .stories-content scrolls */
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.stories-bio-toggle {
+  background: none;
+  border: none;
+  color: rgba(200,180,255,1);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+  margin-top: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+.stories-bio-toggle:hover { color: #fff; }
+
+.stories-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.stories-tag {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(99,102,241,0.5);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+}
+
+.stories-lastfm-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: rgba(200,180,255,1);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(200,180,255,0.4);
+  padding-bottom: 1px;
+  transition: color 0.2s;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+.stories-lastfm-link:hover { color: #fff; }
+
+/* ── Paused indicator ─────────────────────────────── */
+.stories-paused-badge {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9;
+  pointer-events: none;
+  animation: pausedPop 0.15s ease;
+}
+@keyframes pausedPop {
+  from { transform: translate(-50%,-50%) scale(0.7); opacity: 0; }
+  to   { transform: translate(-50%,-50%) scale(1);   opacity: 1; }
+}
+
+/* ── Light theme ──────────────────────────────────── */
+[data-theme="light"] .stories-overlay {
+  background: rgba(20, 10, 50, 0.85);
+}
+[data-theme="light"] .stories-card {
+  box-shadow: 0 32px 80px rgba(40, 20, 100, 0.5), 0 0 0 1px rgba(99,102,241,0.2);
+}
+
+/* Light theme uses same dark text overlays for readability over images */
+[data-theme="light"] .stories-gradient-bottom {
+  background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.88) 40%, rgba(0,0,0,0.55) 65%, transparent 100%);
+}
+
+[data-theme="light"] .stories-title {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,0.9),
+    0 4px 14px rgba(0,0,0,0.7),
+    0 0 50px rgba(0,0,0,0.6);
+}
+
+[data-theme="light"] .stories-meta-chip {
+  background: rgba(0,0,0,0.55);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+[data-theme="light"] .stories-stats {
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+}
+
+[data-theme="light"] .stories-bio {
+  color: #fff;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9), 0 2px 10px rgba(0,0,0,0.6);
+}
+
+[data-theme="light"] .stories-bio-toggle {
+  color: rgba(180,160,255,1);
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+}
+
+[data-theme="light"] .stories-tag {
+  background: rgba(0,0,0,0.5);
+  border-color: rgba(99,102,241,0.6);
+  color: #fff;
+}
+
+[data-theme="light"] .stories-lastfm-link {
+  color: rgba(180,160,255,1);
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+}
+
+/* ── AI Ready placeholder ─────────────────────────── */
+/* This section contains reserved styling for future AI-generated content
+   such as dynamic bio summaries, mood analysis, and personalized insights.
+   ArtistSpotlight interface already has optional fields for AI expansion:
+   - aiSummary: string (AI-generated short summary)
+   - aiMoodAnalysis: string (AI-analyzed mood/vibe)
+   - aiRelatedFacts: string[] (AI-curated interesting facts)
+*/
+.stories-ai-badge {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.8), rgba(139,92,246,0.8));
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 0.65rem;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.stories-ai-insight {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(99,102,241,0.15);
+  border-left: 3px solid rgba(99,102,241,0.6);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.92);
+  font-style: italic;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+}
+
+.stories-ai-mood {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(139,92,246,0.12);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.88);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.stories-ai-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.stories-ai-fact {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.8);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 4px;
+}

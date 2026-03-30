@@ -9,6 +9,7 @@ import { RecommendationsExpanded } from "./pages/RecommendationsExpanded/Recomme
 import { AboutPage } from "./pages/About/About.tsx"
 import Admin from "./pages/Admin/Admin.tsx"
 import { Navigation } from "./components/ui/Navigation/Navigation.tsx"
+import StarField from "./components/ui/StarField/StarField.tsx"
 import "./styles/glass.css"
 
 
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-bg">
+        <StarField />
         <Navigation />
 
         <main className="page-container">

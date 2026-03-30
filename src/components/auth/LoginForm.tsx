@@ -51,6 +51,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               <FaClock className="approval-denied-icon" />
               <h3>Чакащо одобрение</h3>
               <p>{error}</p>
+              <p className="approval-hint">Администраторът ще прегледа заявката ти скоро. Опитай да влезеш отново след малко.</p>
             </div>
           ) : (
             <div className="error-message">{error}</div>
@@ -65,7 +66,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="admin@localhost"
+            placeholder="напр. ivan@example.com"
             required
             disabled={loading}
           />
@@ -79,7 +80,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="въведи парола"
             required
             disabled={loading}
           />

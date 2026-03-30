@@ -1,5 +1,5 @@
 .profile-page {
-  padding: 2rem;
+  padding: 0;
 }
 
 .profile-header {
@@ -8,6 +8,18 @@
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  animation: fadeSlideDown 0.5s ease forwards;
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .profile-header h1 {
@@ -22,6 +34,18 @@
 /* Info Card */
 .profile-info-card {
   margin-bottom: 1.5rem;
+  animation: scaleFadeIn 0.4s ease 0.1s backwards;
+}
+
+@keyframes scaleFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .profile-avatar {
@@ -43,6 +67,12 @@
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
 }
 
 .profile-identity {
@@ -137,7 +167,7 @@
   color: #fff;
   font-size: 0.95rem;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
   outline: none;
 }
 
@@ -145,6 +175,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-group textarea {
@@ -211,17 +243,23 @@
   border-radius: 10px;
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   align-self: flex-start;
 }
 
 .save-btn:hover {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.45), rgba(139, 92, 246, 0.45));
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+}
+
+.save-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .save-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }

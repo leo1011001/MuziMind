@@ -45,6 +45,18 @@ export class LastFMService {
       const response = await fetch(`${BASE_URL}?${params}`);
       return response.json();
     }
+
+  async getArtistInfo(artist: string): Promise<any> {
+    const params = new URLSearchParams({
+      method: 'artist.getinfo',
+      artist,
+      api_key: this.apiKey,
+      format: 'json',
+      autocorrect: '1'
+    });
+    const response = await fetch(`${BASE_URL}?${params}`);
+    return response.json();
+  }
   private apiKey: string;
   
   constructor() {
@@ -183,11 +195,24 @@ export class LastFMService {
       period,
       limit: limit.toString()
     });
-    
+
     const response = await fetch(`${BASE_URL}?${params}`);
     return response.json();
   }
-  
+
+  async getTopTags(username: string, limit: number = 10): Promise<any> {
+    const params = new URLSearchParams({
+      method: 'user.gettoptags',
+      user: username,
+      api_key: this.apiKey,
+      format: 'json',
+      limit: limit.toString()
+    });
+
+    const response = await fetch(`${BASE_URL}?${params}`);
+    return response.json();
+  }
+
   async authenticate(username: string, password: string): Promise<LastFMSession> {
     // Note: This requires the user's Last.fm password
     // In production, use OAuth or mobile auth flow
