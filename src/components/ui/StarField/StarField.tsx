@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Star {
   x: number;
@@ -15,7 +15,8 @@ interface Star {
   color: string;
 }
 
-const STAR_COLORS = [
+// Dark mode colors (light/warm tones)
+const DARK_STAR_COLORS = [
   'rgba(255, 255, 240,',   // warm white
   'rgba(255, 248, 200,',   // light yellow
   'rgba(220, 210, 255,',   // lavender
@@ -23,9 +24,19 @@ const STAR_COLORS = [
   'rgba(255, 230, 180,',   // soft gold
 ];
 
-function makeStars(count: number, w: number, h: number): Star[] {
+// Light mode colors (dark/muted tones for visibility)
+const LIGHT_STAR_COLORS = [
+  'rgba(60, 50, 80,',      // dark purple
+  'rgba(80, 70, 100,',     // muted violet
+  'rgba(50, 60, 90,',      // dark blue-gray
+  'rgba(70, 60, 80,',      // dusty purple
+  'rgba(90, 80, 110,',     // soft charcoal purple
+];
+
+function makeStars(count: number, w: number, h: number, isLight: boolean): Star[] {
+  const colors = isLight ? LIGHT_STAR_COLORS : DARK_STAR_COLORS;
   return Array.from({ length: count }, () => {
-    const baseOpacity = 0.15 + Math.random() * 0.55;
+    const baseOpacity = isLight ? (0.12 + Math.random() * 0.35) : (0.15 + Math.random() * 0.55);
     return {
       x: Math.random() * w,
       y: Math.random() * h,
@@ -38,7 +49,7 @@ function makeStars(count: number, w: number, h: number): Star[] {
       scaleSpeed: 0.004 + Math.random() * 0.006,
       vx: (Math.random() - 0.5) * 0.08,
       vy: (Math.random() - 0.5) * 0.08,
-      color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      color: colors[Math.floor(Math.random() * colors.length)],
     };
   });
 }
@@ -47,6 +58,24 @@ export default function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const animRef = useRef<number>(0);
+  const [isLightMode, setIsLightMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+  });
+
+  // Listen for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme');
+          setIsLightMode(newTheme === 'light');
+        }
+      }
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -60,14 +89,14 @@ export default function StarField() {
     canvas.height = h;
 
     const count = Math.floor((w * h) / 8000);
-    starsRef.current = makeStars(count, w, h);
+    starsRef.current = makeStars(count, w, h, isLightMode);
 
     const handleResize = () => {
       w = window.innerWidth;
       h = window.innerHeight;
       canvas.width = w;
       canvas.height = h;
-      starsRef.current = makeStars(Math.floor((w * h) / 8000), w, h);
+      starsRef.current = makeStars(Math.floor((w * h) / 8000), w, h, isLightMode);
     };
     window.addEventListener('resize', handleResize);
 
@@ -120,7 +149,7 @@ export default function StarField() {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isLightMode]);
 
   return (
     <canvas

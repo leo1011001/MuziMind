@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaSmile, FaHistory, FaBolt, FaCloud, FaCompass, FaHeart, FaBullseye, FaCloudRain, FaHatWizard, FaPaintBrush, FaBalanceScale, FaMusic, FaExclamationTriangle, FaBook, FaStar } from 'react-icons/fa';
+import { FaSmile, FaHistory, FaBolt, FaCloud, FaCompass, FaHeart, FaBullseye, FaCloudRain, FaHatWizard, FaPaintBrush, FaBalanceScale, FaMusic, FaExclamationTriangle, FaBook, FaStar, FaBrain } from 'react-icons/fa';
 import './ReadingComponents.css';
 
 interface DailyReadingProps {
@@ -50,10 +50,31 @@ export function DailyReading({ userId }: DailyReadingProps) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
 
   useEffect(() => {
-    if (userId) fetchReading();
+    if (userId) {
+      fetchReading();
+      fetchInsight();
+    }
   }, [userId]);
+
+  const fetchInsight = async () => {
+    try {
+      setInsightLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const res = await fetch(`${API_URL}/api/reading/insight`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.insight) setInsight(data.insight);
+      }
+    } catch {
+      // silently fail — insight is optional
+    } finally {
+      setInsightLoading(false);
+    }
+  };
 
   const fetchReading = async () => {
     try {
@@ -61,8 +82,22 @@ export function DailyReading({ userId }: DailyReadingProps) {
       setError(null);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${API_URL}/api/reading/latest`, { credentials: 'include' });
+      if (res.status === 404) {
+        // No reading at all — auto-generate
+        await generateNewReading();
+        return;
+      }
       if (!res.ok) throw new Error('Грешка при зареждане');
       const data = await res.json();
+      // Auto-regenerate if the stored reading is from a previous day
+      const readingDate = new Date(data.date);
+      const today = new Date();
+      const isStale = readingDate.toDateString() !== today.toDateString();
+      if (isStale) {
+        setLoading(false);
+        await generateNewReading();
+        return;
+      }
       setReading(data);
     } catch (err) {
       setError('Грешка при зареждане на прочита');
@@ -169,6 +204,17 @@ export function DailyReading({ userId }: DailyReadingProps) {
           ))}
         </div>
       </div>
+      {(insight || insightLoading) && (
+        <div className="reading-insight-card">
+          <div className="reading-insight-header">
+            <FaBrain /> <span>Музикална личност</span>
+          </div>
+          {insightLoading
+            ? <div className="reading-insight-skeleton" />
+            : <p className="reading-insight-text">{insight}</p>
+          }
+        </div>
+      )}
       {reading.recommendations && reading.recommendations.length > 0 && (
         <div className="recommendations-section">
           <h4><FaMusic /> Препоръчано за теб</h4>
