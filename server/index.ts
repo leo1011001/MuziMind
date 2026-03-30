@@ -875,7 +875,7 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
           .replace(/<[^>]+>/g, '')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 600);
+          .slice(0, 5000);
 
         // Tags / genres
         const lastfmTags: string[] = (lfm?.tags?.tag || []).map((t: any) => t.name).slice(0, 5);
