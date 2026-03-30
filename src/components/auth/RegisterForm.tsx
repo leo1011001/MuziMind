@@ -68,9 +68,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
       <div className="auth-form register-form">
         <div className="pending-approval-message">
           <FaClock className="pending-icon" />
-          <h2>Чакащо одобрение</h2>
+          <h2>Регистрацията е успешна!</h2>
           <p>{pendingMessage}</p>
-          <button onClick={onSwitchToLogin} className="submit-btn" style={{ marginTop: '1rem' }}>
+          <div className="pending-steps">
+            <div className="pending-step">
+              <span className="step-num">1</span>
+              <span>Акаунтът ти е създаден и чака одобрение</span>
+            </div>
+            <div className="pending-step">
+              <span className="step-num">2</span>
+              <span>Администраторът ще прегледа заявката ти</span>
+            </div>
+            <div className="pending-step">
+              <span className="step-num">3</span>
+              <span>След одобрение можеш да влезеш и да използваш MuziMind</span>
+            </div>
+          </div>
+          <button onClick={onSwitchToLogin} className="submit-btn" style={{ marginTop: '1.5rem' }}>
             Към вход
           </button>
         </div>
@@ -81,7 +95,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   return (
     <div className="auth-form register-form">
       <h2>Регистрация</h2>
-      <form onSubmit={handleSubmit} className="form-container">
+      <form onSubmit={handleSubmit} className="form-container" autoComplete="off">
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
@@ -92,9 +106,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            placeholder="Your username"
+            placeholder="напр. ivan_music92"
             required
             disabled={loading}
+            autoComplete="off"
           />
         </div>
 
@@ -106,9 +121,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="example@email.com"
+            placeholder="напр. ivan@example.com"
             required
             disabled={loading}
+            autoComplete="off"
           />
         </div>
 
@@ -120,9 +136,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="минимум 6 символа"
             required
             disabled={loading}
+            autoComplete="new-password"
           />
         </div>
 
@@ -134,9 +151,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="въведи паролата отново"
             required
             disabled={loading}
+            autoComplete="new-password"
           />
         </div>
 
@@ -148,9 +166,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="lastfmUsername"
             value={formData.lastfmUsername}
             onChange={handleChange}
-            placeholder="leo1011001"
+            placeholder="напр. leo1011001"
             required
             disabled={loading}
+            autoComplete="off"
           />
           <small>Вашето Last.fm потребителско име за синхронизиране на музиката</small>
         </div>

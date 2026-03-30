@@ -1,5 +1,5 @@
 .recommendations-page {
-  padding: 2rem;
+  padding: 0;
 }
 
 /* Header */
@@ -180,6 +180,34 @@
   color: #fff;
 }
 
+.rec-artists-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rec-artists-header h2 {
+  margin: 0;
+}
+
+.rec-spotlight-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+  border-color: rgba(99, 102, 241, 0.35);
+  white-space: nowrap;
+}
+
+.rec-spotlight-btn:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.4));
+  transform: translateY(-2px);
+}
+
 .rec-artist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -249,6 +277,139 @@
   color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
 }
+
+/* Artist story hint */
+.rec-artist-story-hint {
+  font-size: 0.72rem;
+  color: rgba(180, 160, 255, 0.6);
+  margin-top: 0.3rem;
+}
+
+/* ── Stories bubble strip ─────────────────────────── */
+.rec-stories-strip {
+  margin-bottom: 1.5rem;
+  /* allow hover scale to breathe above */
+  overflow: visible;
+}
+
+.rec-stories-strip-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rec-stories-bubbles {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  /* extra top padding so hover scale isn't clipped */
+  padding-top: 8px;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  /* allow overflow in block direction for hover scale */
+  overflow-y: visible;
+}
+.rec-stories-bubbles::-webkit-scrollbar { display: none; }
+
+.rec-story-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  min-width: 68px;
+  flex-shrink: 0;
+}
+
+.rec-story-bubble .rec-story-img,
+.rec-story-bubble .rec-story-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid rgba(99, 102, 241, 0.7);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 4px 14px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(30, 20, 60, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: rgba(180, 160, 255, 0.7);
+}
+
+.rec-story-bubble:hover .rec-story-img,
+.rec-story-bubble:hover .rec-story-placeholder {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2.5px rgba(99,102,241,1), 0 6px 20px rgba(99,102,241,0.4);
+}
+
+.rec-story-name {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  max-width: 68px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Genre bar chart */
+.rec-genre-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rec-genre-bar-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 42px;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.rec-genre-bar-label {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.8);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-genre-bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rec-genre-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #6366f1, #a78bfa);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 4px;
+}
+
+.rec-genre-bar-count {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+  text-align: right;
+}
+
+/* Light theme genre bars */
+[data-theme="light"] .rec-genre-bar-track { background: rgba(99,102,241,0.1); }
+[data-theme="light"] .rec-genre-bar-label { color: #3b2470; }
+[data-theme="light"] .rec-genre-bar-count { color: #6b51a3; }
 
 /* Animations */
 @keyframes recSlideIn {

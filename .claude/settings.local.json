@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm --prefix server run server)",
+      "Bash(npm install:*)",
+      "Bash(npx --prefix server ts-node --transpile-only server/index.ts)",
+      "Bash(grep -n ^..*-pages*{ C:/Users/User/Documents/GitHub/MuziMind/.claude/worktrees/upbeat-jackson/src/pages/About/About.css C:/Users/User/Documents/GitHub/MuziMind/.claude/worktrees/upbeat-jackson/src/pages/Admin/Admin.css)",
+      "Bash(npx ts-node:*)",
+      "WebSearch",
+      "Bash(NODE_PATH=\"C:/Users/User/AppData/Roaming/npm/node_modules\" node generate_thesis.js)",
+      "Bash(NODE_PATH=\"C:/Users/User/AppData/Roaming/npm/node_modules\" node -e \":*)"
+    ]
+  }
+}

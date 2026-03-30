@@ -15,8 +15,19 @@
   padding: 0 2rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
   height: 70px;
+}
+
+/* nav-menu takes remaining space on desktop, nav-actions stays at end */
+@media (min-width: 769px) {
+  .nav-menu {
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .nav-actions {
+    order: 3;
+  }
 }
 
 .nav-logo {
@@ -103,6 +114,13 @@
   transform: translateY(-2px);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .mobile-menu-toggle {
   display: none;
   flex-direction: column;
@@ -122,6 +140,11 @@
 
   .mobile-menu-toggle {
     display: flex;
+  }
+
+  /* On desktop, hide the theme toggle from nav-menu area (it's in nav-actions) */
+  .nav-actions {
+    gap: 0.25rem;
   }
 
   .nav-menu {

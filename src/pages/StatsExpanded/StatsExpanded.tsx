@@ -33,15 +33,15 @@ export const StatsPage: React.FC = () => {
   }, [user]);
 
   if (!user) {
-    return <div className="page-container"><p>Моля, влезте в системата</p></div>;
+    return <div className="stats-page"><p>Моля, влезте в системата</p></div>;
   }
 
   if (loading) {
-    return <div className="page-container"><p>Зареждане на статистика...</p></div>;
+    return <div className="stats-page"><p>Зареждане на статистика...</p></div>;
   }
 
   return (
-    <div className="page-container stats-page">
+    <div className="stats-page">
       <div className="page-header">
         <button className="back-btn" onClick={() => navigate('/')}>
           <FaArrowLeft /> Назад

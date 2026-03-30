@@ -7,7 +7,7 @@ export const AboutPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="page-container about-page">
+    <div className="about-page">
       <div className="page-header">
         <button className="back-btn" onClick={() => navigate('/')}>
           <FaArrowLeft /> Назад
