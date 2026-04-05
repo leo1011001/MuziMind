@@ -106,7 +106,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            placeholder="напр. ivan_music92"
+            placeholder="username"
             required
             disabled={loading}
             autoComplete="off"
@@ -121,7 +121,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="напр. ivan@example.com"
+            placeholder="example@gmail.com"
             required
             disabled={loading}
             autoComplete="off"
@@ -136,7 +136,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="минимум 6 символа"
+            placeholder="••••••••"
             required
             disabled={loading}
             autoComplete="new-password"
@@ -151,7 +151,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            placeholder="въведи паролата отново"
+            placeholder="••••••••"
             required
             disabled={loading}
             autoComplete="new-password"
@@ -166,7 +166,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             name="lastfmUsername"
             value={formData.lastfmUsername}
             onChange={handleChange}
-            placeholder="напр. leo1011001"
+            placeholder="your_lastfm_username"
             required
             disabled={loading}
             autoComplete="off"
