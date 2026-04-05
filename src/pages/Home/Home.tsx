@@ -6,8 +6,7 @@ import { QuickStats } from '../../components/stats/QuickStats';
 import { MusicPrediction } from '../../components/music/MusicPrediction';
 import { NowPlaying } from '../../components/music/NowPlaying';
 import { UserListeningHistory } from '../../components/music/UserListeningHistory';
-import { MusicOverview } from '../../components/music/MusicOverview';
-import { FaMusic, FaSync, FaExclamationTriangle, FaLink, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaMusic, FaSync, FaExclamationTriangle, FaLink, FaCheckCircle, FaTimesCircle, FaChartBar, FaRobot, FaHeadphones, FaUserPlus, FaSignInAlt, FaStar, FaGlobe } from 'react-icons/fa';
 import './Home.css';
 
 interface HomeStats {
@@ -16,6 +15,72 @@ interface HomeStats {
   listeningHours: number[];
   recentScrobbles: any[];
 }
+
+const GuestLanding: React.FC = () => {
+  return (
+    <div className="guest-landing">
+      {/* Hero */}
+      <div className="guest-hero">
+        <div className="guest-hero-icon"><FaMusic /></div>
+        <h1 className="guest-hero-title">Добре дошъл в MuziMind</h1>
+        <p className="guest-hero-subtitle">
+          Твоята персонализирана музикална вселена. Анализ на вкуса, AI прогнози и истории за любимите ти артисти.
+        </p>
+        <div className="guest-hero-actions">
+          <a href="/register" className="glass-button primary guest-cta-btn">
+            <FaUserPlus /> Създай акаунт
+          </a>
+          <a href="/login" className="glass-button guest-cta-btn">
+            <FaSignInAlt /> Влез
+          </a>
+        </div>
+      </div>
+
+      {/* Feature cards */}
+      <div className="guest-features">
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#a78bfa' }}><FaChartBar /></div>
+          <h3>Музикална статистика</h3>
+          <p>Топ артисти, песни, жанрове и пиков час на слушане — всичко визуализирано от твоя Last.fm профил.</p>
+        </div>
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#34d399' }}><FaRobot /></div>
+          <h3>AI Дневен прочит</h3>
+          <p>Персонализиран текст генериран от AI всеки ден на български език, базиран на музикалния ти вкус.</p>
+        </div>
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#fb923c' }}><FaHeadphones /></div>
+          <h3>Artist Stories</h3>
+          <p>Instagram-стил карусел с биографии, снимки и информация за любимите ти изпълнители.</p>
+        </div>
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#f472b6' }}><FaStar /></div>
+          <h3>AI Прогнози</h3>
+          <p>Умни препоръки за нови артисти и жанрове, базирани на твоите музикални навици.</p>
+        </div>
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#60a5fa' }}><FaGlobe /></div>
+          <h3>Last.fm интеграция</h3>
+          <p>Свържи своя Last.fm профил и MuziMind автоматично синхронизира цялата ти история на слушане.</p>
+        </div>
+        <div className="guest-feature-card glass-card">
+          <div className="guest-feature-icon" style={{ color: '#fbbf24' }}><FaMusic /></div>
+          <h3>NowPlaying</h3>
+          <p>Виж в реално време коя песен слушаш в момента — обновява се автоматично на всеки 15 секунди.</p>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="guest-bottom-cta glass-card">
+        <h2>Готов да започнеш?</h2>
+        <p>Свържи своя Last.fm и открий музикалната си личност.</p>
+        <a href="/register" className="glass-button primary">
+          <FaUserPlus /> Регистрирай се безплатно
+        </a>
+      </div>
+    </div>
+  );
+};
 
 export const Home: React.FC = () => {
   const { user, syncWithLastFM } = useAuth();
@@ -30,23 +95,21 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Auto-sync on login
       autoSync();
       fetchUserStats();
     } else {
-      setLoading(false); // show guest content when not logged in
+      setLoading(false);
     }
   }, [user]);
 
   const autoSync = async () => {
     if (!user?.lastfmUsername) return;
-    
     try {
       const result = await syncWithLastFM(user.lastfmUsername);
       if (result?.success) {
         setLastSynced(new Date());
         setSyncSuccess(true);
-        setSyncMessage(`Auto-synced! Added ${result.newScrobbles || 0} new tracks.`);
+        setSyncMessage(`Синхронизирано! Добавени ${result.newScrobbles || 0} нови записа.`);
         setTimeout(() => setSyncMessage(''), 5000);
       }
     } catch (error) {
@@ -56,13 +119,9 @@ export const Home: React.FC = () => {
 
   const fetchUserStats = async () => {
     if (!user) return;
-    
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/stats`, {
-        credentials: 'include',
-      });
-      
+      const response = await fetch(`${API_URL}/api/stats`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -79,20 +138,19 @@ export const Home: React.FC = () => {
       alert('Моля, свържете вашия Last.fm профил първо в настройките.');
       return;
     }
-
     setSyncing(true);
     try {
       const result = await syncWithLastFM(user.lastfmUsername!);
       if (result?.success) {
         setLastSynced(new Date());
         setSyncSuccess(true);
-        setSyncMessage(`Synced successfully! Added ${result.newScrobbles || 0} new tracks.`);
-        await fetchUserStats(); // Refresh stats
+        setSyncMessage(`Синхронизирано! Добавени ${result.newScrobbles || 0} нови записа.`);
+        await fetchUserStats();
         setTimeout(() => setSyncMessage(''), 5000);
       }
     } catch (error) {
       setSyncSuccess(false);
-      setSyncMessage(`Sync error: ${(error as Error).message}`);
+      setSyncMessage(`Грешка: ${(error as Error).message}`);
       setTimeout(() => setSyncMessage(''), 5000);
     } finally {
       setSyncing(false);
@@ -101,10 +159,14 @@ export const Home: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return `Добро утро, ${user?.username}!`;
-    if (hour < 18) return `Добър ден, ${user?.username}!`;
-    return `Добър вечер, ${user?.username}!`;
+    const name = user?.username || 'гост';
+    if (hour < 12) return `Добро утро, ${name}!`;
+    if (hour < 18) return `Добър ден, ${name}!`;
+    return `Добър вечер, ${name}!`;
   };
+
+  // Guest view
+  if (!user) return <GuestLanding />;
 
   if (loading) {
     return (
@@ -120,35 +182,25 @@ export const Home: React.FC = () => {
       <div className="home-header">
         <div className="header-left">
           <h1 className="welcome-title"><FaMusic /> {getGreeting()}</h1>
-          <p className="welcome-subtitle">
-            Твоето музикално пътешествие продължава тук...
-          </p>
+          <p className="welcome-subtitle">Твоето музикално пътешествие продължава тук...</p>
         </div>
-        
+
         <div className="header-right">
-          {/* LanguageToggle removed */}
-          
-          <button 
+          <button
             onClick={handleSync}
             disabled={syncing || !user?.lastfmUsername}
             className="glass-button sync-button"
           >
             {syncing ? (
-              <>
-                <span className="spinner"></span>
-                Синхронизиране...
-              </>
+              <><span className="spinner"></span>Синхронизиране...</>
             ) : (
-              <>
-                <FaSync /> Синхронизирай
-              </>
+              <><FaSync /> Синхронизирай</>
             )}
           </button>
-          
+
           {lastSynced && (
             <div className="last-sync">
-              Последна синхронизация:{' '}
-              {lastSynced.toLocaleTimeString()}
+              Последна синхронизация: {lastSynced.toLocaleTimeString()}
             </div>
           )}
 
@@ -165,10 +217,8 @@ export const Home: React.FC = () => {
           <div className="warning-icon"><FaExclamationTriangle /></div>
           <div className="warning-content">
             <h3>Свържи Last.fm</h3>
-            <p>
-              Свържи своя Last.fm профил, за да видиш историята си на слушане и да получиш персонализирани прозрения.
-            </p>
-            <button 
+            <p>Свържи своя Last.fm профил, за да видиш историята си на слушане и да получиш персонализирани прозрения.</p>
+            <button
               className="glass-button primary"
               onClick={() => window.location.href = '/profile?tab=connections'}
             >
@@ -179,43 +229,20 @@ export const Home: React.FC = () => {
       )}
 
       <div className="home-grid">
-        {!user && (
-          <div className="guest-column">
-            <MusicOverview />
-          </div>
-        )}
-        {/* Left Column */}
         <div className="grid-left">
           <NowPlaying />
-          
-          <DailyReading 
-            userId={user?.id || ''}
-          />
+          <DailyReading userId={user?.id || ''} />
         </div>
-
-        {/* Right Column */}
         <div className="grid-right">
-          <QuickStats 
-            stats={stats}
-          />
-
-          {user && (
-            <MusicPrediction />
-          )}
-          
-          <RecentScrobbles 
-            scrobbles={stats?.recentScrobbles || []}
-            language="bg"
-          />
+          <QuickStats stats={stats} />
+          <MusicPrediction />
+          <RecentScrobbles scrobbles={stats?.recentScrobbles || []} language="bg" />
         </div>
       </div>
 
-      {/* Listening History - Shows what user listened to */}
-      {user && (
-        <div className="listening-history-section">
-          <UserListeningHistory />
-        </div>
-      )}
+      <div className="listening-history-section">
+        <UserListeningHistory />
+      </div>
     </div>
   );
 };
