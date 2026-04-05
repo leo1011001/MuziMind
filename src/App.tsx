@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Home from "./pages/Home/Home.tsx"
 import Stats from "./pages/Stats/Stats.tsx"
 import Recommendations from "./pages/Recommendations/Recommendations.tsx"
@@ -31,6 +31,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Navigate to="/login?tab=register" replace />} />
           </Routes>
         </main>
       </div>

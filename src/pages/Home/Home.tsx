@@ -27,7 +27,7 @@ const GuestLanding: React.FC = () => {
           Твоята персонализирана музикална вселена. Анализ на вкуса, AI прогнози и истории за любимите ти артисти.
         </p>
         <div className="guest-hero-actions">
-          <a href="/register" className="glass-button primary guest-cta-btn">
+          <a href="/login?tab=register" className="glass-button primary guest-cta-btn">
             <FaUserPlus /> Създай акаунт
           </a>
           <a href="/login" className="glass-button guest-cta-btn">
@@ -74,7 +74,7 @@ const GuestLanding: React.FC = () => {
       <div className="guest-bottom-cta glass-card">
         <h2>Готов да започнеш?</h2>
         <p>Свържи своя Last.fm и открий музикалната си личност.</p>
-        <a href="/register" className="glass-button primary">
+        <a href="/login?tab=register" className="glass-button primary">
           <FaUserPlus /> Регистрирай се безплатно
         </a>
       </div>
