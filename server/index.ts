@@ -728,16 +728,16 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
-            max_tokens: 420,
-            temperature: 0.8,
+            max_tokens: 900,
+            temperature: 0.75,
             messages: [
               {
                 role: 'system',
-                content: `Ти си персонален музикален асистент за MuziMind. Пишеш САМО на БЪЛГАРСКИ ЕЗИК, използвайки САМО кирилица. НИКОГА не използвай латиница за български думи — всяка дума трябва да е на кирилица. Имената на артисти и песни остават в оригиналния им вид (английски, корейски и т.н.).`
+                content: `Ти си персонален музикален асистент за MuziMind. Пишеш САМО на БЪЛГАРСКИ ЕЗИК с КИРИЛИЦА. НИКОГА не използвай латински букви за български думи — дори ако не знаеш правописа, пиши на кирилица. ЗАБРАНЕНО е използването на латински букви с диакритики (â, ô, û и подобни) за български думи. Имената на артисти и песни остават в оригиналния им вид (английски, корейски и т.н.).`
               },
               {
                 role: 'user',
-                content: `Напиши персонализирано музикално четене за слушателя — точно 4 абзаца, разделени с празен ред.
+                content: `Напиши персонализирано музикално четене за слушателя — точно 4 абзаца, разделени с празен ред. Всеки абзац трябва да бъде завършен изцяло — не спирай в средата на изречение.
 
 Данни за седмицата:
 - Топ артисти: ${topArtistNames}
@@ -751,14 +751,18 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
 3. Поетична музикална мъдрост или образ, вдъхновен от конкретна песен или артист от списъка.
 4. Кратко пожелание или насърчение за следващата седмица, свързано с музикалното му пътешествие.
 
-Правила: само кирилица за български думи, имена в оригинал, топло и поетично, без заглавия, без номера, само 4 абзаца.`
+Правила: САМО кирилица за български думи, имена в оригинал, топло и поетично, без заглавия, без номера, точно 4 завършени абзаца.`
               }
             ]
           })
         });
         if (groqResp.ok) {
           const groqData: any = await groqResp.json();
-          const aiText = groqData.choices?.[0]?.message?.content?.trim() || '';
+          let aiText = groqData.choices?.[0]?.message?.content?.trim() || '';
+          // Strip garbled words: Latin with circumflex diacritics (â, ê, î, ô, û)
+          // that indicate botched Cyrillic romanization (e.g. "sâuoka", "energiâ")
+          // Circumflex accents are virtually never in English/Korean artist names
+          aiText = aiText.replace(/\b\w*[\u00E2\u00EA\u00EE\u00F4\u00FB\u00C2\u00CA\u00CE\u00D4\u00DB]\w*\b/g, '').replace(/  +/g, ' ').trim();
           if (aiText) content = aiText;
         } else {
           console.warn('Groq reading failed:', await groqResp.text());
