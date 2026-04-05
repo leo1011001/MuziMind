@@ -51,7 +51,7 @@ const GuestLanding: React.FC = () => {
         <div className="guest-feature-card glass-card">
           <div className="guest-feature-icon" style={{ color: '#fb923c' }}><FaHeadphones /></div>
           <h3>Artist Stories</h3>
-          <p>Instagram-стил карусел с биографии, снимки и информация за любимите ти изпълнители.</p>
+          <p>Карусел "сторита" с биографии, снимки и информация за любимите ти изпълнители.</p>
         </div>
         <div className="guest-feature-card glass-card">
           <div className="guest-feature-icon" style={{ color: '#f472b6' }}><FaStar /></div>
