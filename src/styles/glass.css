@@ -117,12 +117,16 @@
 
 /* Glass cards */
 [data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background:
+    radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(99, 102, 241, 0.07), transparent 40%),
+    rgba(255, 255, 255, 0.7);
   border-color: rgba(99, 102, 241, 0.14);
   box-shadow: 0 4px 24px rgba(80, 60, 160, 0.08), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 [data-theme="light"] .glass-card:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background:
+    radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(99, 102, 241, 0.12), transparent 40%),
+    rgba(255, 255, 255, 0.85);
   border-color: rgba(99, 102, 241, 0.25);
   box-shadow: 0 16px 48px rgba(80, 60, 160, 0.13), inset 0 1px 0 rgba(255,255,255,1);
 }
@@ -673,7 +677,11 @@ a {
 /* ==================== */
 
 .glass-card {
-  background: rgba(25, 20, 40, 0.25);
+  --mouse-x: -9999px;
+  --mouse-y: -9999px;
+  background:
+    radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.055), transparent 40%),
+    rgba(25, 20, 40, 0.25);
   backdrop-filter: blur(var(--blur-amount));
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
@@ -719,9 +727,11 @@ a {
 
 .glass-card:hover {
   transform: translateY(-6px);
-  background: rgba(30, 25, 45, 0.3);
+  background:
+    radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.1), transparent 40%),
+    rgba(30, 25, 45, 0.3);
   border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
