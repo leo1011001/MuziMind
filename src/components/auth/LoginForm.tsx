@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaClock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaClock, FaExclamationCircle } from 'react-icons/fa';
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -12,6 +12,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string>('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -29,8 +30,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     try {
       await login(formData.email, formData.password);
       navigate('/');
-    } catch (error) {
-      setError((error as Error).message || 'Неочаквана грешка при вход');
+    } catch (err: any) {
+      const msg = err?.message || 'Неочаквана грешка при вход';
+      // Server sends code:'EMAIL_NOT_VERIFIED' — parse from message or direct prop
+      if (err?.code === 'EMAIL_NOT_VERIFIED' || msg.includes('верифициран')) {
+        setUnverifiedEmail(formData.email);
+      }
+      setError(msg);
     }
   };
 
@@ -46,7 +52,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       <h2>Вход</h2>
       <form onSubmit={handleSubmit} className="form-container">
         {error && (
-          error.includes('одобрен') ? (
+          unverifiedEmail ? (
+            <div className="approval-denied-message">
+              <FaExclamationCircle className="approval-denied-icon" style={{ color: '#a78bfa' }} />
+              <h3>Имейлът не е верифициран</h3>
+              <p>{error}</p>
+              <button
+                className="submit-btn"
+                style={{ marginTop: '0.75rem', fontSize: '0.85rem', padding: '0.6rem 1rem' }}
+                onClick={() => navigate(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`)}
+              >
+                Въведи верификационен код
+              </button>
+            </div>
+          ) : error.includes('одобрен') ? (
             <div className="approval-denied-message">
               <FaClock className="approval-denied-icon" />
               <h3>Чакащо одобрение</h3>
@@ -84,6 +103,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             required
             disabled={loading}
           />
+        </div>
+
+        <div className="forgot-password-row">
+          <button
+            type="button"
+            className="link-btn forgot-password-link"
+            onClick={() => navigate('/forgot-password')}
+          >
+            Забравена парола?
+          </button>
         </div>
 
         <button type="submit" disabled={loading} className="submit-btn">
