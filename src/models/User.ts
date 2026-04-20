@@ -22,6 +22,13 @@ export interface User {
   passwordHash: string;
   role?: 'user' | 'admin';
   approved?: boolean;
+  // Email verification
+  emailVerified?: boolean;
+  emailVerificationCode?: string;
+  emailVerificationExpires?: Date;
+  // Password reset (token stored as SHA-256 hash)
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   profile?: UserProfile;
   lastfmUsername?: string;
   lastfmSessionKey?: string;
