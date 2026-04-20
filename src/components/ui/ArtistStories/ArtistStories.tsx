@@ -16,11 +16,10 @@ export interface ArtistSpotlight {
   listeners: number;
   globalPlays: number;
   lastfmUrl: string;
-  // AI-ready optional fields for future integration
-  aiSummary?: string;           // AI-generated short summary
-  aiMoodAnalysis?: string;      // AI-analyzed mood/vibe description
-  aiRelatedFacts?: string[];    // AI-curated interesting facts
-  aiGeneratedAt?: string;       // Timestamp of AI generation
+  aiSummary?: string;
+  aiMoodAnalysis?: string;
+  aiRelatedFacts?: string[];
+  aiGeneratedAt?: string;
 }
 
 interface ArtistStoriesProps {
@@ -29,7 +28,7 @@ interface ArtistStoriesProps {
   onClose: () => void;
 }
 
-const STORY_DURATION = 9000; // ms per story
+const STORY_DURATION = 9000;
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -48,6 +47,7 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHoldingRef = useRef<boolean>(false);
   const clickStartRef = useRef<{ x: number; time: number } | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const artist = artists[current];
 
@@ -59,13 +59,15 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
     setBioExpanded(false);
     startTimeRef.current = Date.now();
     pausedAtRef.current = 0;
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [artists.length, onClose]);
 
-  // Restart current story (for left tap on first story)
   const restartCurrent = useCallback(() => {
     setProgress(0);
+    setBioExpanded(false);
     startTimeRef.current = Date.now();
     pausedAtRef.current = 0;
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, []);
 
   // Progress ticker
@@ -97,12 +99,10 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
     return () => window.removeEventListener('keydown', onKey);
   }, [current, goTo, onClose, restartCurrent]);
 
-  // Mouse/touch down - start hold detection
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  // Shared hold timer start (used by both zones and content)
+  const startHold = (e: React.PointerEvent) => {
     clickStartRef.current = { x: e.clientX, time: Date.now() };
     isHoldingRef.current = false;
-
-    // Start hold timer (150ms threshold for hold detection)
     holdTimeoutRef.current = setTimeout(() => {
       isHoldingRef.current = true;
       pausedAtRef.current = Date.now() - startTimeRef.current;
@@ -110,42 +110,42 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
     }, 150);
   };
 
-  // Mouse/touch up - handle navigation or unpause
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Clear hold timer
+  // Shared hold timer release (unpause only, no navigation)
+  const endHold = () => {
     if (holdTimeoutRef.current) {
       clearTimeout(holdTimeoutRef.current);
       holdTimeoutRef.current = null;
     }
-
-    // If we were holding, just unpause
     if (isHoldingRef.current) {
       isHoldingRef.current = false;
       startTimeRef.current = Date.now() - pausedAtRef.current;
       setPaused(false);
-      return;
+      return true; // was holding
     }
+    return false; // was not holding
+  };
 
-    // Otherwise it's a tap - navigate based on position
+  // Zone pointer events (handles nav + hold)
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    startHold(e);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const wasHolding = endHold();
+    if (wasHolding) return;
+
     if (!clickStartRef.current) return;
-
     const x = e.clientX;
     const w = (e.currentTarget as HTMLDivElement).offsetWidth;
-
     if (x < w * 0.35) {
-      // Left zone: go back or restart if first
       if (current === 0) restartCurrent();
       else goTo(current - 1);
     } else if (x > w * 0.65) {
-      // Right zone: go forward
       goTo(current + 1);
     }
-    // Center zone: do nothing (was for toggle pause, now hold-to-pause replaces it)
-
     clickStartRef.current = null;
   };
 
-  // Handle pointer leave (in case user drags out)
   const handlePointerLeave = () => {
     if (holdTimeoutRef.current) {
       clearTimeout(holdTimeoutRef.current);
@@ -158,11 +158,29 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
     }
   };
 
-  // Cleanup timeout on unmount
+  // Content area pointer events — hold detection only, no navigation
+  const handleContentPointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, [role="button"]')) return;
+    startHold(e);
+  };
+
+  const handleContentPointerUp = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, [role="button"]')) return;
+    endHold();
+    clickStartRef.current = null;
+  };
+
+  // Scroll handler — when user scrolls back to top, collapse bio (restores buttons)
+  const handleContentScroll = useCallback(() => {
+    if (contentRef.current && contentRef.current.scrollTop < 10 && bioExpanded) {
+      setBioExpanded(false);
+    }
+  }, [bioExpanded]);
+
   useEffect(() => {
-    return () => {
-      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
-    };
+    return () => { if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current); };
   }, []);
 
   if (!artist) return null;
@@ -226,26 +244,32 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
           onPointerLeave={handlePointerLeave}
         />
 
-        {/* Navigation buttons (separate from zones for proper z-index) */}
+        {/* Navigation buttons — blur when bio is expanded */}
         <button
-          className="stories-nav-btn stories-nav-left"
+          className={`stories-nav-btn stories-nav-left${bioExpanded ? ' nav-blurred' : ''}`}
           onClick={(e) => { e.stopPropagation(); if (current === 0) restartCurrent(); else goTo(current - 1); }}
           aria-label="Previous"
         >
           <FaChevronLeft />
         </button>
         <button
-          className="stories-nav-btn stories-nav-right"
+          className={`stories-nav-btn stories-nav-right${bioExpanded ? ' nav-blurred' : ''}`}
           onClick={(e) => { e.stopPropagation(); goTo(current + 1); }}
           aria-label="Next"
         >
           <FaChevronRight />
         </button>
 
-        {/* Content */}
-        <div className="stories-content" onClick={e => e.stopPropagation()}>
-          <h2 className="stories-title">{artist.name}</h2>
-
+        {/* Content — no title here (shown in top bar), hold detection for pause */}
+        <div
+          className="stories-content"
+          ref={contentRef}
+          onClick={e => e.stopPropagation()}
+          onPointerDown={handleContentPointerDown}
+          onPointerUp={handleContentPointerUp}
+          onPointerLeave={handlePointerLeave}
+          onScroll={handleContentScroll}
+        >
           <div className="stories-meta">
             {artist.country && <span className="stories-meta-chip">📍 {artist.country}</span>}
             {artist.formedYear && <span className="stories-meta-chip">🎸 з. {artist.formedYear}</span>}
@@ -264,7 +288,17 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
             <div className="stories-bio">
               <p>{bioExpanded ? artist.bio : bioPreview}{!bioExpanded && artist.bio.length > 220 && '…'}</p>
               {artist.bio.length > 220 && (
-                <button className="stories-bio-toggle" onClick={() => setBioExpanded(p => !p)}>
+                <button
+                  className="stories-bio-toggle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const next = !bioExpanded;
+                    setBioExpanded(next);
+                    if (!next && contentRef.current) {
+                      contentRef.current.scrollTop = 0;
+                    }
+                  }}
+                >
                   {bioExpanded ? 'По-малко ▲' : 'Повече ▼'}
                 </button>
               )}
@@ -289,19 +323,12 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
             </a>
           )}
 
-          {/* AI-generated insights */}
           {artist.aiSummary && (
-            <div className="stories-ai-insight">
-              ✨ {artist.aiSummary}
-            </div>
+            <div className="stories-ai-insight">✨ {artist.aiSummary}</div>
           )}
-
           {artist.aiMoodAnalysis && (
-            <div className="stories-ai-mood">
-              🎭 {artist.aiMoodAnalysis}
-            </div>
+            <div className="stories-ai-mood">🎭 {artist.aiMoodAnalysis}</div>
           )}
-
           {artist.aiRelatedFacts && artist.aiRelatedFacts.length > 0 && (
             <div className="stories-ai-facts">
               {artist.aiRelatedFacts.map((fact, i) => (
@@ -311,12 +338,7 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
           )}
         </div>
 
-        {/* AI badge */}
-        {artist.aiGeneratedAt && (
-          <div className="stories-ai-badge">🤖 AI</div>
-        )}
-
-        {/* Paused indicator */}
+        {artist.aiGeneratedAt && <div className="stories-ai-badge">🤖 AI</div>}
         {paused && <div className="stories-paused-badge">⏸</div>}
       </div>
     </div>
