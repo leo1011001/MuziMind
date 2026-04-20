@@ -9,6 +9,9 @@ import { StatsPage } from "./pages/StatsExpanded/StatsExpanded.tsx"
 import { RecommendationsExpanded } from "./pages/RecommendationsExpanded/RecommendationsExpanded.tsx"
 import { AboutPage } from "./pages/About/About.tsx"
 import Admin from "./pages/Admin/Admin.tsx"
+import VerifyEmail from "./pages/VerifyEmail/VerifyEmail.tsx"
+import ForgotPassword from "./pages/ForgotPassword/ForgotPassword.tsx"
+import ResetPassword from "./pages/ResetPassword/ResetPassword.tsx"
 import { Navigation } from "./components/ui/Navigation/Navigation.tsx"
 import StarField from "./components/ui/StarField/StarField.tsx"
 import "./styles/glass.css"
@@ -46,6 +49,9 @@ export default function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Navigate to="/login?tab=register" replace />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </main>
       </div>

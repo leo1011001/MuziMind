@@ -1,0 +1,216 @@
+.verify-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.verify-card {
+  background: rgba(19, 15, 34, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+.verify-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: #a78bfa;
+  margin: 0 auto 1.5rem;
+}
+
+.verify-success-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.15));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: #34d399;
+  margin: 0 auto 1.5rem;
+}
+
+.verify-card h1 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.verify-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+.verify-subtitle strong {
+  color: rgba(196, 181, 253, 0.8);
+  font-weight: 600;
+}
+
+.verify-message {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.verify-message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.verify-message.info {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+
+/* 6-digit input boxes */
+.verify-digits {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.verify-digit {
+  width: 48px;
+  height: 58px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
+  border-radius: 10px;
+  color: #c4b5fd;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  font-family: 'Courier New', Courier, monospace;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  caret-color: #a78bfa;
+}
+
+.verify-digit:focus {
+  border-color: rgba(139, 92, 246, 0.7);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+  background: rgba(139, 92, 246, 0.07);
+}
+
+.verify-digit.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.verify-digit.shake {
+  animation: shake 0.35s ease;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.verify-loading {
+  color: rgba(167, 139, 250, 0.6);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.verify-redirect-hint {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.verify-resend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.verify-resend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  color: #a78bfa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.verify-resend-btn:hover:not(:disabled) {
+  color: #c4b5fd;
+}
+
+.verify-resend-btn:disabled {
+  color: rgba(167, 139, 250, 0.35);
+  cursor: default;
+}
+
+.verify-back-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.verify-back-btn:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+@media (max-width: 480px) {
+  .verify-card {
+    padding: 2rem 1.25rem;
+  }
+  .verify-digit {
+    width: 42px;
+    height: 52px;
+    font-size: 1.3rem;
+  }
+  .verify-digits {
+    gap: 0.4rem;
+  }
+}
