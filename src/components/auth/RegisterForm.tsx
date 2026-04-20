@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaMusic, FaUser, FaClock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaMusic, FaUser, FaClock, FaCheckCircle } from 'react-icons/fa';
 import './LoginForm.css';
 
 interface RegisterFormProps {
@@ -46,7 +46,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         formData.password,
         formData.lastfmUsername
       );
-      if (result?.pending) {
+      if (result?.pendingVerification) {
+        // Redirect to verify-email page with the registered email pre-filled
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+      } else if (result?.pending) {
         setPendingMessage(result.message || 'Регистрацията е успешна! Моля, изчакайте одобрение от администратор.');
       } else {
         navigate('/');

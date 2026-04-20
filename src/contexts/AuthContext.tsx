@@ -17,7 +17,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string, lastfmUsername?: string) => Promise<{ pending?: boolean; message?: string }>;
+  register: (username: string, email: string, password: string, lastfmUsername?: string) => Promise<{ pending?: boolean; pendingVerification?: boolean; email?: string; message?: string }>;
   logout: () => Promise<void>;
   syncWithLastFM: (lastfmUsername: string) => Promise<{ success: boolean; newScrobbles: number }>;
   loading: boolean;
@@ -73,7 +73,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error((err && (err.error || err.message)) || 'Login failed');
+        const error: any = new Error((err && (err.error || err.message)) || 'Login failed');
+        if (err?.code) error.code = err.code;
+        throw error;
       }
 
       const data = await response.json();
@@ -103,8 +105,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
+      if (data.pendingVerification) {
+        return { pendingVerification: true, email: data.email, message: data.message };
+      }
       if (data.pending) {
-        // Account created but needs admin approval
         return { pending: true, message: data.message };
       }
       setUser(data.user || null);

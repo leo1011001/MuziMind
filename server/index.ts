@@ -9,6 +9,15 @@ import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { ObjectId } from 'mongodb';
+import crypto from 'crypto';
+import {
+  generateVerificationCode,
+  generateResetToken,
+  hashToken,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  verifyEmailConfig,
+} from './email.ts';
 
 declare module 'express-session' {
   interface SessionData {
@@ -73,6 +82,7 @@ app.use(session({
 async function initServer() {
   await db.connect();
   console.log('🔗 DB connected, checking admin user...');
+  verifyEmailConfig(); // non-fatal: just logs if email isn't configured
 
   const admin = await db.users.findOne({ role: 'admin' });
 
@@ -161,19 +171,37 @@ app.get('/api/health', async (req, res) => {
 app.post('/api/register', async (req, res) => {
   try {
     const { email, username, password, lastfmUsername } = req.body;
-    
+
     if (!email || !username || !password || !lastfmUsername) {
       return res.status(400).json({ error: 'Моля, попълнете всички полета включително Last.fm потребител' });
     }
-    
-    const result = await authService.register(email, username, password, lastfmUsername);
 
+    const result = await authService.register(email, username, password, lastfmUsername);
     if (!result.success || !result.userId) {
       return res.status(400).json({ error: result.error || 'Registration failed' });
     }
 
-    // New users require admin approval — do NOT set session
-    res.json({ success: true, pending: true, message: 'Регистрацията е успешна! Моля, изчакайте одобрение от администратор.' });
+    // Generate and store a 6-digit verification code (expires in 24 h)
+    const code = generateVerificationCode();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await db.updateUser(result.userId, {
+      emailVerificationCode: code,
+      emailVerificationExpires: expires,
+      emailVerified: false,
+      approved: false,
+    } as any);
+
+    // Fire-and-forget — don't block response on email delivery
+    sendVerificationEmail(email, username, code).catch(err =>
+      console.error('Verification email send error:', err)
+    );
+
+    res.json({
+      success: true,
+      pendingVerification: true,
+      email,
+      message: 'Регистрацията е успешна! Изпратихме верификационен код на имейла ти.',
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
@@ -192,7 +220,15 @@ app.post('/api/login', async (req, res) => {
     const result = await authService.login(email, password);
     
     if (result.success && result.user && result.user._id) {
-      // Block unapproved non-admin users
+      // Block unverified users (admin bypasses)
+      if (!result.user.emailVerified && result.user.role !== 'admin') {
+        return res.status(403).json({
+          error: 'Имейлът ти не е верифициран. Провери пощата си за верификационен код.',
+          code: 'EMAIL_NOT_VERIFIED',
+          email: result.user.email,
+        });
+      }
+      // Block unapproved non-admin users (legacy / manual block)
       if (!result.user.approved && result.user.role !== 'admin') {
         return res.status(403).json({ error: 'Акаунтът ви все още не е одобрен от администратор.' });
       }
@@ -227,6 +263,158 @@ app.post('/api/logout', (req, res) => {
     }
     res.json({ success: true });
   });
+});
+
+// ── Email verification ────────────────────────────────────────────────────────
+
+// POST /api/auth/verify-email  — submit 6-digit code
+app.post('/api/auth/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Имейл и код са задължителни' });
+    }
+
+    const user = await db.findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'Потребителят не е намерен' });
+    }
+    if (user.emailVerified) {
+      return res.json({ success: true, alreadyVerified: true });
+    }
+    if (
+      !user.emailVerificationCode ||
+      user.emailVerificationCode !== code.trim() ||
+      !user.emailVerificationExpires ||
+      new Date() > user.emailVerificationExpires
+    ) {
+      return res.status(400).json({ error: 'Невалиден или изтекъл код. Провери отново или поискай нов.' });
+    }
+
+    // Mark verified & auto-approve
+    await db.updateUser(user._id!.toString(), {
+      emailVerified: true,
+      approved: true,
+      emailVerificationCode: undefined,
+      emailVerificationExpires: undefined,
+    } as any);
+
+    res.json({ success: true, message: 'Имейлът е верифициран успешно! Вече можеш да влезеш.' });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// POST /api/auth/resend-verification  — resend code (rate-limited to 1 per 2 min)
+app.post('/api/auth/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Имейлът е задължителен' });
+
+    const user = await db.findUserByEmail(email);
+    if (!user) return res.status(404).json({ error: 'Потребителят не е намерен' });
+    if (user.emailVerified) return res.json({ success: true, alreadyVerified: true });
+
+    // Throttle: if an unexpired code was issued < 2 min ago, refuse
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    if (
+      user.emailVerificationExpires &&
+      user.emailVerificationExpires > twoMinutesAgo &&
+      // existing code has >22 h remaining (i.e. it was just issued)
+      user.emailVerificationExpires > new Date(Date.now() + 22 * 60 * 60 * 1000)
+    ) {
+      return res.status(429).json({ error: 'Изчакай малко преди да поискаш нов код.' });
+    }
+
+    const code = generateVerificationCode();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await db.updateUser(user._id!.toString(), {
+      emailVerificationCode: code,
+      emailVerificationExpires: expires,
+    } as any);
+
+    sendVerificationEmail(email, user.username, code).catch(err =>
+      console.error('Resend verification email error:', err)
+    );
+
+    res.json({ success: true, message: 'Нов код е изпратен на имейла ти.' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// ── Password reset ────────────────────────────────────────────────────────────
+
+// POST /api/auth/forgot-password  — send reset link
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Имейлът е задължителен' });
+
+    // Always return success to prevent email enumeration
+    const user = await db.findUserByEmail(email);
+    if (user) {
+      const token = generateResetToken();
+      const tokenHash = hashToken(token);
+      const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await db.updateUser(user._id!.toString(), {
+        passwordResetToken: tokenHash,
+        passwordResetExpires: expires,
+      } as any);
+
+      sendPasswordResetEmail(email, user.username, token).catch(err =>
+        console.error('Password reset email error:', err)
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Ако акаунт с този имейл съществува, изпратихме линк за нулиране на паролата.',
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// POST /api/auth/reset-password  — set new password using token
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Токен и нова парола са задължителни' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Паролата трябва да е поне 6 символа' });
+    }
+
+    const tokenHash = hashToken(token);
+    const user = await db.users.findOne({
+      passwordResetToken: tokenHash,
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Токенът е невалиден или е изтекъл. Поискай нов линк.' });
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.default.hash(password, 10);
+
+    await db.updateUser(user._id!.toString(), {
+      passwordHash,
+      passwordResetToken: undefined,
+      passwordResetExpires: undefined,
+    } as any);
+
+    res.json({ success: true, message: 'Паролата е сменена успешно! Вече можеш да влезеш.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
 });
 
 // Get current user
