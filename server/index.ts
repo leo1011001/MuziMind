@@ -728,37 +728,40 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
-            max_tokens: 420,
-            temperature: 0.8,
+            max_tokens: 900,
+            temperature: 0.75,
             messages: [
               {
                 role: 'system',
-                content: `Ти си персонален музикален асистент за MuziMind. Пишеш САМО на БЪЛГАРСКИ ЕЗИК, използвайки САМО кирилица. НИКОГА не използвай латиница за български думи — всяка дума трябва да е на кирилица. Имената на артисти и песни остават в оригиналния им вид (английски, корейски и т.н.).`
+                content: `Ти си персонален музикален асистент за MuziMind. Пишеш САМО на БЪЛГАРСКИ ЕЗИК с КИРИЛИЦА. НИКОГА не използвай латински букви за български думи — дори ако не знаеш правописа, пиши на кирилица. ЗАБРАНЕНО е използването на латински букви с диакритики (â, ô, û и подобни) за български думи. Имената на артисти и песни остават в оригиналния им вид (английски, корейски и т.н.).`
               },
               {
                 role: 'user',
-                content: `Напиши персонализирано музикално четене за слушателя — точно 4 абзаца, разделени с празен ред.
+                content: `Напиши персонализирано музикално четене — точно 4 кратки абзаца, разделени с празен ред.
 
-Данни за седмицата:
+Данни:
 - Топ артисти: ${topArtistNames}
-- Топ песни: ${topTracksForPrompt}
-- Общо слушания: ${totalPlaycount}
+- Топ песни (само за контекст): ${topTracksForPrompt}
+- Слушания: ${totalPlaycount}
 - Настроение: ${mood}
 
-Структура на 4-те абзаца:
-1. Открой кои артисти доминират седмицата и какво говори това за настроението на слушателя.
-2. Анализирай интензивността — ${totalPlaycount} слушания, какво означава това за връзката му с музиката.
-3. Поетична музикална мъдрост или образ, вдъхновен от конкретна песен или артист от списъка.
-4. Кратко пожелание или насърчение за следващата седмица, свързано с музикалното му пътешествие.
+Абзац 1 (2 изречения): Кои 1-2 артиста доминират и какво настроение носят.
+Абзац 2 (2 изречения): ${totalPlaycount} слушания — кратко за интензивността.
+Абзац 3 (2 изречения): Поетичен образ от ЕДНА конкретна песен или артист. Не изреждай много песни.
+Абзац 4 (1-2 изречения): Кратко пожелание за следващата седмица.
 
-Правила: само кирилица за български думи, имена в оригинал, топло и поетично, без заглавия, без номера, само 4 абзаца.`
+Правила: САМО кирилица за български думи. Имена в оригинал. Без заглавия и номера. Кратки ясни изречения. Не изреждай списъци от песни.`
               }
             ]
           })
         });
         if (groqResp.ok) {
           const groqData: any = await groqResp.json();
-          const aiText = groqData.choices?.[0]?.message?.content?.trim() || '';
+          let aiText = groqData.choices?.[0]?.message?.content?.trim() || '';
+          // Strip garbled words: Latin with circumflex diacritics (â, ê, î, ô, û)
+          // that indicate botched Cyrillic romanization (e.g. "sâuoka", "energiâ")
+          // Circumflex accents are virtually never in English/Korean artist names
+          aiText = aiText.replace(/\b\w*[\u00E2\u00EA\u00EE\u00F4\u00FB\u00C2\u00CA\u00CE\u00D4\u00DB]\w*\b/g, '').replace(/  +/g, ' ').trim();
           if (aiText) content = aiText;
         } else {
           console.warn('Groq reading failed:', await groqResp.text());
@@ -842,84 +845,7 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
   }
 });
 
-// Helper function to generate AI artist insight
-async function generateArtistInsight(artistData: {
-  name: string;
-  genre: string;
-  mood: string;
-  style: string;
-  country: string;
-  formedYear: string | number;
-  tags: string[];
-  listeners: number;
-  globalPlays: number;
-  bio: string;
-}): Promise<{ aiSummary: string; aiMoodAnalysis: string; aiRelatedFacts: string[] } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey.trim().length === 0) {
-    return null;
-  }
-
-  try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
-
-    const prompt = `Ти си музикален AI асистент за приложението MuziMind.
-Генерирай кратък персонализиран инсайт за артиста на БЪЛГАРСКИ ЕЗИК.
-
-Артист: ${artistData.name}
-Държава: ${artistData.country || 'неизвестна'}
-Създаден: ${artistData.formedYear || 'неизвестна година'}
-Жанр: ${artistData.genre || 'разнообразен'}
-Настроение: ${artistData.mood || 'неопределено'}
-Стил: ${artistData.style || 'уникален'}
-Тагове: ${artistData.tags.slice(0, 5).join(', ') || 'няма'}
-Слушатели: ${artistData.listeners.toLocaleString()}
-Общо изслушвания: ${artistData.globalPlays.toLocaleString()}
-Кратко био: ${artistData.bio.slice(0, 300)}
-
-Отговори САМО в JSON формат (без markdown):
-{
-  "aiSummary": "Кратко, топло, поетично изречение (макс 80 думи) за артиста - защо е интересен, какво прави музиката му специална. НА БЪЛГАРСКИ.",
-  "aiMoodAnalysis": "Едно изречение (макс 30 думи) описващо настроението/вайба на музиката. НА БЪЛГАРСКИ.",
-  "aiRelatedFacts": ["Факт 1 (макс 15 думи)", "Факт 2 (макс 15 думи)"]
-}
-
-Правила:
-- Пиши НА БЪЛГАРСКИ. Имената остават на оригиналния език.
-- Бъди топъл и ентусиазиран, но не прекалявай.
-- Ако нямаш достатъчно информация, бъди кратък.
-- Върни САМО валиден JSON, без допълнителен текст.`;
-
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
-
-    // Parse JSON response
-    try {
-      const parsed = JSON.parse(text);
-      return {
-        aiSummary: parsed.aiSummary || '',
-        aiMoodAnalysis: parsed.aiMoodAnalysis || '',
-        aiRelatedFacts: Array.isArray(parsed.aiRelatedFacts) ? parsed.aiRelatedFacts.slice(0, 2) : []
-      };
-    } catch {
-      // If JSON parsing fails, try to extract summary from text
-      return {
-        aiSummary: text.slice(0, 200),
-        aiMoodAnalysis: '',
-        aiRelatedFacts: []
-      };
-    }
-  } catch (e) {
-    console.warn('AI artist insight generation failed:', (e as any).message);
-    return null;
-  }
-}
+// Anthropic SDK removed - all AI generation now uses Groq API (llama-3.3-70b-versatile)
 
 // Artist spotlight — enriched artist data from TheAudioDB + Last.fm + AI
 app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
@@ -930,7 +856,6 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
 
     const LASTFM_KEY = process.env.LASTFM_API_KEY || '';
     const AUDIODB_KEY = '2'; // TheAudioDB free public key
-    const useAI = !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 0;
 
     const results = await Promise.allSettled(
       artistNames.map(async (artist: string) => {
@@ -953,7 +878,7 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
           .replace(/<[^>]+>/g, '')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 600);
+          .slice(0, 5000);
 
         // Tags / genres
         const lastfmTags: string[] = (lfm?.tags?.tag || []).map((t: any) => t.name).slice(0, 5);
@@ -980,21 +905,7 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
           lastfmUrl: lfm?.url || `https://www.last.fm/music/${encodeURIComponent(artist)}`,
         };
 
-        // Generate AI insight if available
-        let aiData: { aiSummary?: string; aiMoodAnalysis?: string; aiRelatedFacts?: string[]; aiGeneratedAt?: string } = {};
-        if (useAI) {
-          const insight = await generateArtistInsight(baseData);
-          if (insight) {
-            aiData = {
-              aiSummary: insight.aiSummary,
-              aiMoodAnalysis: insight.aiMoodAnalysis,
-              aiRelatedFacts: insight.aiRelatedFacts,
-              aiGeneratedAt: new Date().toISOString()
-            };
-          }
-        }
-
-        return { ...baseData, ...aiData };
+        return baseData;
       })
     );
 

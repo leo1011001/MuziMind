@@ -66,7 +66,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="напр. ivan@example.com"
+            placeholder="example@gmail.com"
             required
             disabled={loading}
           />
@@ -80,7 +80,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="въведи парола"
+            placeholder="••••••••"
             required
             disabled={loading}
           />

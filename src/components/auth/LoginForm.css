@@ -416,6 +416,6 @@
 @media (max-width: 600px) {
   .auth-form {
     padding: 2rem 1.5rem;
-    margin: 1rem;
+    margin: 1rem auto;
   }
 }
