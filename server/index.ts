@@ -316,14 +316,10 @@ app.post('/api/auth/resend-verification', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Потребителят не е намерен' });
     if (user.emailVerified) return res.json({ success: true, alreadyVerified: true });
 
-    // Throttle: if an unexpired code was issued < 2 min ago, refuse
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-    if (
-      user.emailVerificationExpires &&
-      user.emailVerificationExpires > twoMinutesAgo &&
-      // existing code has >22 h remaining (i.e. it was just issued)
-      user.emailVerificationExpires > new Date(Date.now() + 22 * 60 * 60 * 1000)
-    ) {
+    // Throttle: block resend if code was issued < 2 minutes ago.
+    // Codes expire in 24h, so "issued < 2 min ago" means expires > now + 23h58m.
+    const twoMinThreshold = new Date(Date.now() + (24 * 60 - 2) * 60 * 1000);
+    if (user.emailVerificationExpires && user.emailVerificationExpires > twoMinThreshold) {
       return res.status(429).json({ error: 'Изчакай малко преди да поискаш нов код.' });
     }
 
