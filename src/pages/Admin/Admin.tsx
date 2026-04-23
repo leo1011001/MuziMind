@@ -259,11 +259,10 @@ const Admin: React.FC = () => {
                       </button>
                     </td>
                     <td>
-                      <span className={`verification-status ${u.verificationStatus || 'none'}`}>
-                        {u.verificationStatus === 'approved' && <><FaCheckCircle /> Верифициран</>}
-                        {u.verificationStatus === 'pending' && <><FaClock /> Чакащ</>}
-                        {u.verificationStatus === 'rejected' && <><FaTimesCircle /> Отхвърлен</>}
-                        {(!u.verificationStatus || u.verificationStatus === 'none') && '—'}
+                      <span className={`verification-status ${u.approved ? 'approved' : 'rejected'}`}>
+                        {u.approved
+                          ? <><FaCheckCircle /> Верифициран</>
+                          : <><FaTimesCircle /> Не</>}
                       </span>
                     </td>
                     <td className="date-cell">

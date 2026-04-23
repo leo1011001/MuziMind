@@ -41,35 +41,48 @@ export const RecommendationsExpanded: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchPrediction = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/predict`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setPrediction(data);
+        // Fetch prediction and live top artists in parallel
+        const [predResult, topArtistsResult] = await Promise.allSettled([
+          fetch(`${API_URL}/api/predict`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+          fetch(`${API_URL}/api/top-artists?period=7day`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+        ]);
 
-          // Fetch artist spotlight data for the recommended artists
-          if (data.recommendedArtists?.length > 0) {
-            const artistNames = data.recommendedArtists.map((a: any) => a.name).join(',');
-            try {
-              const spotlightRes = await fetch(`${API_URL}/api/artist-spotlight?artists=${encodeURIComponent(artistNames)}`, { credentials: 'include' });
-              if (spotlightRes.ok) {
-                const spotlightData = await spotlightRes.json();
-                setSpotlight(spotlightData);
-              }
-            } catch (e) {
-              console.log('Spotlight fetch failed:', e);
+        const predData = predResult.status === 'fulfilled' ? predResult.value : null;
+        if (predData) setPrediction(predData);
+
+        // Use live Last.fm top artists for the stories carousel
+        const liveArtists: string[] = (topArtistsResult.status === 'fulfilled' && Array.isArray(topArtistsResult.value))
+          ? topArtistsResult.value
+          : [];
+
+        // Fallback to recommendedArtists from predict if live fetch returned nothing
+        const artistNames: string[] = liveArtists.length > 0
+          ? liveArtists
+          : (predData?.recommendedArtists || []).map((a: any) => a.name);
+
+        if (artistNames.length > 0) {
+          try {
+            const spotlightRes = await fetch(
+              `${API_URL}/api/artist-spotlight?artists=${encodeURIComponent(artistNames.join(','))}`,
+              { credentials: 'include' }
+            );
+            if (spotlightRes.ok) {
+              setSpotlight(await spotlightRes.json());
             }
+          } catch (e) {
+            console.log('Spotlight fetch failed:', e);
           }
         }
       } catch (error) {
-        console.error('Error fetching prediction:', error);
+        console.error('Error fetching recommendations:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPrediction();
+    fetchAll();
   }, [user]);
 
   if (!user) {

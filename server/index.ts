@@ -1032,6 +1032,54 @@ app.post('/api/reading/generate', requireAuth, async (req, res) => {
 // Anthropic SDK removed - all AI generation now uses Groq API (llama-3.3-70b-versatile)
 
 // Artist spotlight — enriched artist data from TheAudioDB + Last.fm + AI
+// ── Artist spotlight in-memory cache (5 min TTL) ────────────────────────────
+const spotlightCache = new Map<string, { data: any; ts: number }>();
+const SPOTLIGHT_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper: fetch with timeout
+async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// GET /api/top-artists — live top 5 from Last.fm (for the stories carousel)
+app.get('/api/top-artists', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    const user = await db.findUserById(userId);
+    if (!user?.lastfmUsername) return res.json([]);
+
+    const period = (req.query.period as string) || '7day';
+    const cacheKey = `top5:${user.lastfmUsername}:${period}`;
+    const cached = spotlightCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < SPOTLIGHT_TTL) {
+      return res.json(cached.data);
+    }
+
+    const LASTFM_KEY = process.env.LASTFM_API_KEY || '';
+    const raw = await fetchWithTimeout(
+      `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${encodeURIComponent(user.lastfmUsername)}&period=${period}&limit=5&api_key=${LASTFM_KEY}&format=json`
+    ).then(r => r.json()).catch(() => null);
+
+    const artists: string[] = (raw?.topartists?.artist || [])
+      .slice(0, 5)
+      .map((a: any) => a.name)
+      .filter(Boolean);
+
+    spotlightCache.set(cacheKey, { data: artists, ts: Date.now() });
+    res.json(artists);
+  } catch (error) {
+    console.error('Top artists error:', error);
+    res.status(500).json({ error: 'Грешка при зареждане на топ артисти' });
+  }
+});
+
 app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
   try {
     const rawArtists = (req.query.artists as string) || '';
@@ -1041,13 +1089,25 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
     const LASTFM_KEY = process.env.LASTFM_API_KEY || '';
     const AUDIODB_KEY = '2'; // TheAudioDB free public key
 
+    // Check cache for the whole set
+    const cacheKey = artistNames.join('|').toLowerCase();
+    const cached = spotlightCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < SPOTLIGHT_TTL) {
+      return res.json(cached.data);
+    }
+
     const results = await Promise.allSettled(
       artistNames.map(async (artist: string) => {
-        // Fetch from TheAudioDB (free, no signup) and Last.fm in parallel
+        // Per-artist cache check
+        const artistKey = `artist:${artist.toLowerCase()}`;
+        const ac = spotlightCache.get(artistKey);
+        if (ac && Date.now() - ac.ts < SPOTLIGHT_TTL) return ac.data;
+
+        // Fetch from TheAudioDB and Last.fm in parallel with timeouts
         const [audiodbRes, lastfmRes] = await Promise.allSettled([
-          fetch(`https://www.theaudiodb.com/api/v1/json/${AUDIODB_KEY}/search.php?s=${encodeURIComponent(artist)}`)
+          fetchWithTimeout(`https://www.theaudiodb.com/api/v1/json/${AUDIODB_KEY}/search.php?s=${encodeURIComponent(artist)}`, 6000)
             .then(r => r.json()),
-          fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json&autocorrect=1`)
+          fetchWithTimeout(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json&autocorrect=1`, 6000)
             .then(r => r.json())
         ]);
 
@@ -1089,6 +1149,8 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
           lastfmUrl: lfm?.url || `https://www.last.fm/music/${encodeURIComponent(artist)}`,
         };
 
+        // Cache per-artist result
+        spotlightCache.set(`artist:${artist.toLowerCase()}`, { data: baseData, ts: Date.now() });
         return baseData;
       })
     );
@@ -1096,6 +1158,9 @@ app.get('/api/artist-spotlight', requireAuth, async (req, res) => {
     const spotlight = results
       .filter(r => r.status === 'fulfilled')
       .map((r: any) => r.value);
+
+    // Cache the full result set
+    spotlightCache.set(cacheKey, { data: spotlight, ts: Date.now() });
 
     res.json(spotlight);
   } catch (error) {
