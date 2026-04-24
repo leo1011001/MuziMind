@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .claude/
+
+# Environment variables - never commit these
+.env
+.env.*
+server/.env
