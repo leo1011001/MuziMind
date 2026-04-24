@@ -57,14 +57,17 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.CLIENT_URL,          // e.g. https://muzimind.com
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  'https://muzimind.com',
+  'https://www.muzimind.com',
+  process.env.CLIENT_URL,
 ].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
+    // Allow any Vercel preview deployments for this project
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS: origin ${origin} not allowed`));
   },
