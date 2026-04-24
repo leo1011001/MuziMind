@@ -54,8 +54,20 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,          // e.g. https://muzimind.com
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true
 }));
 
@@ -64,14 +76,15 @@ import bodyParser from 'body-parser';
 app.use(bodyParser.json());
 app.use(express.json());
 
+const isProd = process.env.NODE_ENV === 'production';
 app.use(session({
   secret: process.env.SESSION_SECRET || 'muzimind-dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProd,
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-origin cookies in prod
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
