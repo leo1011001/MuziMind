@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "outDir": "./dist",
+    "rootDir": "..",
+    "allowImportingTsExtensions": false
+  },
+  "include": ["index.ts", "email.ts", "loadEnv.ts", "../src/api/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
