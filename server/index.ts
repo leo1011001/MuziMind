@@ -29,10 +29,10 @@ console.log('Loaded LASTFM_API_KEY:', process.env.LASTFM_API_KEY ? 'YES' : 'NO')
 console.log('Loaded MONGODB_URI:', process.env.MONGODB_URI ? 'YES' : 'NO');
 
 // Import database and services
-import { db } from '../src/api/database.ts';
-import { authService } from '../src/api/auth.ts';
-import { syncService } from '../src/api/sync.ts';
-import { lastFMService } from '../src/api/lastfm.ts';
+import { db } from './api/database.ts';
+import { authService } from './api/auth.ts';
+import { syncService } from './api/sync.ts';
+import { lastFMService } from './api/lastfm.ts';
 
 
 const app = express();

@@ -9,9 +9,9 @@
     "skipLibCheck": true,
     "strict": false,
     "outDir": "./dist",
-    "rootDir": "..",
+    "rootDir": ".",
     "allowImportingTsExtensions": false
   },
-  "include": ["index.ts", "email.ts", "loadEnv.ts", "../src/api/**/*.ts"],
+  "include": ["index.ts", "email.ts", "loadEnv.ts", "api/**/*.ts", "models/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
