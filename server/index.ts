@@ -41,6 +41,9 @@ const PORT = process.env.PORT || 3000;
 // Security HTTP headers
 app.use(helmet());
 
+// Trust Railway/Vercel proxy headers
+app.set('trust proxy', 1);
+
 // Rate limiting (basic, not too strict)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -704,14 +707,7 @@ app.post('/api/connect/lastfm', requireAuth, async (req, res) => {
   }
 });
 
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, '../dist')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, '../dist/index.html'));
-  });
-}
+// Frontend is served by Vercel — no static file serving needed here
 
 // Get latest reading
 app.get('/api/reading/latest', requireAuth, async (req, res) => {
