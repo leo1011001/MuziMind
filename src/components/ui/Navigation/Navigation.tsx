@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic, FaUser, FaBars, FaTimes, FaShieldAlt, FaSun, FaMoon } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaUser, FaBars, FaTimes, FaShieldAlt, FaSun, FaMoon } from 'react-icons/fa';
 import '../UI.css';
 
 export const Navigation: React.FC = () => {
@@ -30,7 +30,7 @@ export const Navigation: React.FC = () => {
     <nav className="navigation">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          <FaMusic /> MuziMind
+          <img src="/logo.png" alt="MuziMind" className="nav-logo-img" />
         </Link>
 
         {/* Always-visible right side: theme toggle + hamburger */}
