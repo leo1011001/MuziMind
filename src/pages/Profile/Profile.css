@@ -2,6 +2,28 @@
   padding: 0;
 }
 
+.pw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pw-input-wrap input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+.pw-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.pw-toggle:hover { color: #a78bfa; }
+
 .profile-header {
   display: flex;
   align-items: center;

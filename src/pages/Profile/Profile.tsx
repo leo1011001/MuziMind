@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaSave, FaArrowLeft, FaLastfm, FaCalendarAlt, FaMusic, FaCrown, FaHeadphones, FaCheckCircle, FaTimesCircle, FaEdit, FaShieldAlt } from 'react-icons/fa';
+import { FaUser, FaSave, FaArrowLeft, FaLastfm, FaCalendarAlt, FaMusic, FaCrown, FaHeadphones, FaCheckCircle, FaTimesCircle, FaEdit, FaShieldAlt, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import './Profile.css';
 
 interface ProfileData {
@@ -29,6 +29,15 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [pwMessage, setPwMessage] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
 
   // Editable fields
   const [bio, setBio] = useState('');
@@ -59,6 +68,28 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) { setPwMessage('mismatch'); return; }
+    if (newPassword.length < 6) { setPwMessage('short'); return; }
+    setPwSaving(true); setPwMessage('');
+    try {
+      const res = await fetch(`${API_URL}/api/auth/change-password`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (res.ok) {
+        setPwMessage('success');
+        setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+      } else {
+        const err = await res.json();
+        setPwMessage(err.error || 'error');
+      }
+    } catch { setPwMessage('error'); }
+    finally { setPwSaving(false); setTimeout(() => setPwMessage(''), 4000); }
   };
 
   const handleSave = async () => {
@@ -206,6 +237,45 @@ export default function Profile() {
 
           <button className="glass-button save-btn" onClick={handleSave} disabled={saving}>
             <FaSave /> {saving ? 'Запазване...' : 'Запази промените'}
+          </button>
+        </div>
+      </div>
+      {/* Change Password */}
+      <div className="glass-card profile-edit-card">
+        <h3><FaLock /> Промяна на парола</h3>
+        <div className="profile-form">
+          <div className="form-group pw-field">
+            <label>Текуща парола</label>
+            <div className="pw-input-wrap">
+              <input type={showCurrent ? 'text' : 'password'} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="••••••••" />
+              <button type="button" className="pw-toggle" onClick={() => setShowCurrent(v => !v)}>{showCurrent ? <FaEyeSlash /> : <FaEye />}</button>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group pw-field">
+              <label>Нова парола</label>
+              <div className="pw-input-wrap">
+                <input type={showNew ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="мин. 6 символа" />
+                <button type="button" className="pw-toggle" onClick={() => setShowNew(v => !v)}>{showNew ? <FaEyeSlash /> : <FaEye />}</button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Потвърди нова парола</label>
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="повтори паролата" />
+            </div>
+          </div>
+
+          {pwMessage && (
+            <div className={`profile-message ${pwMessage === 'success' ? 'success' : 'error'}`}>
+              {pwMessage === 'success' ? <><FaCheckCircle /> Паролата е сменена успешно!</>
+                : pwMessage === 'mismatch' ? <><FaTimesCircle /> Паролите не съвпадат</>
+                : pwMessage === 'short' ? <><FaTimesCircle /> Паролата трябва да е поне 6 символа</>
+                : <><FaTimesCircle /> {pwMessage}</>}
+            </div>
+          )}
+
+          <button className="glass-button save-btn" onClick={handleChangePassword} disabled={pwSaving || !currentPassword || !newPassword || !confirmPassword}>
+            <FaLock /> {pwSaving ? 'Запазване...' : 'Смени паролата'}
           </button>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic
 import '../UI.css';
 
 export const Navigation: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,7 +82,7 @@ export const Navigation: React.FC = () => {
             <FaInfoCircle /> За нас
           </Link>
 
-          {user ? (
+          {loading ? null : user ? (
             <div className="nav-user-section">
               <span className="nav-username">{user.username}</span>
               <button className="nav-logout" onClick={handleLogout}>

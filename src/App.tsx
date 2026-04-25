@@ -19,16 +19,29 @@ import "./styles/glass.css"
 
 export default function App() {
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const updateCards = (x: number, y: number) => {
       const cards = document.querySelectorAll<HTMLElement>('.glass-card');
       cards.forEach(card => {
         const rect = card.getBoundingClientRect();
-        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        card.style.setProperty('--mouse-x', `${x - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${y - rect.top}px`);
       });
     };
+
+    const handleMouseMove = (e: MouseEvent) => updateCards(e.clientX, e.clientY);
+
+    // Touch support — follow finger slide
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch) updateCards(touch.clientX, touch.clientY);
+    };
+
     document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
 
   return (

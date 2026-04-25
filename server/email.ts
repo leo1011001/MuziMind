@@ -58,22 +58,22 @@ const emailWrapper = (body: string) => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MuziMind</title>
 </head>
-<body style="margin:0;padding:0;background:#0c0a1e;font-family:'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background:#0a0818;font-family:'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
 
   <!-- Top accent bar -->
-  <div style="background:linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);height:3px;"></div>
+  <div style="background:linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);height:4px;"></div>
 
   <!-- Outer padding -->
-  <div style="padding:40px 20px 60px;">
+  <div style="padding:40px 20px 60px;background:#0a0818;">
 
     <!-- Card -->
-    <div style="max-width:500px;margin:0 auto;background:#130f22;border:1px solid rgba(139,92,246,0.2);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+    <div style="max-width:500px;margin:0 auto;background:#12103a;border:1px solid #6366f1;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.7);">
 
       <!-- Card header -->
       <div style="padding:32px 36px 0;text-align:center;">
-        <div style="display:inline-block;background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1));border:1px solid rgba(139,92,246,0.25);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
+        <div style="display:inline-block;background:#1e1a4a;border:1px solid #8b5cf6;border-radius:12px;padding:10px 18px;margin-bottom:24px;">
           <span style="font-size:16px;margin-right:6px;">♪</span>
-          <span style="font-size:15px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:0.5px;">MuziMind</span>
+          <span style="font-size:15px;font-weight:700;color:#c4b5fd;letter-spacing:0.5px;">MuziMind</span>
         </div>
       </div>
 
@@ -83,10 +83,10 @@ const emailWrapper = (body: string) => `
       </div>
 
       <!-- Footer -->
-      <div style="border-top:1px solid rgba(255,255,255,0.06);padding:20px 36px;text-align:center;">
-        <p style="margin:0;color:rgba(255,255,255,0.25);font-size:11px;letter-spacing:0.3px;">
+      <div style="border-top:1px solid rgba(99,102,241,0.25);padding:20px 36px;text-align:center;">
+        <p style="margin:0;color:#a78bfa;font-size:11px;letter-spacing:0.3px;">
           © 2025 MuziMind · Твоята музикална вселена<br/>
-          <span style="color:rgba(255,255,255,0.15);">Ако не си поискал това, просто игнорирай имейла.</span>
+          <span style="color:#a78bfa;">Ако не си поискал това, просто игнорирай имейла.</span>
         </p>
       </div>
 
@@ -106,32 +106,32 @@ export async function sendVerificationEmail(
   const verifyUrl = `${BASE_URL}/verify-email?code=${code}&email=${encodeURIComponent(toEmail)}`;
 
   const html = emailWrapper(`
-    <h1 style="margin:0 0 10px;color:#fff;font-size:22px;font-weight:600;text-align:center;">
+    <h1 style="margin:0 0 10px;color:#ffffff;font-size:22px;font-weight:600;text-align:center;">
       Потвърди имейл адреса си
     </h1>
-    <p style="margin:0 0 28px;color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;text-align:center;">
-      Здравей, <strong style="color:rgba(255,255,255,0.75);">${username}</strong>! Въведи кода по-долу,
+    <p style="margin:0 0 28px;color:#c4b5fd;font-size:14px;line-height:1.7;text-align:center;">
+      Здравей, <strong style="color:#ffffff;">${username}</strong>! Въведи кода по-долу,
       за да активираш акаунта си.
     </p>
 
     <!-- Code block — clickable, opens verify page with code pre-filled -->
     <a href="${verifyUrl}"
-       style="display:block;text-decoration:none;background:rgba(99,102,241,0.08);border:1.5px solid rgba(139,92,246,0.35);border-radius:14px;padding:28px 20px 20px;text-align:center;margin-bottom:14px;transition:all 0.2s;">
-      <div style="font-size:44px;font-weight:800;letter-spacing:16px;color:#c4b5fd;font-family:'Courier New',Courier,monospace;line-height:1;padding-left:16px;">
+       style="display:block;text-decoration:none;background:#1e1a4a;border:2px solid #8b5cf6;border-radius:14px;padding:28px 20px 20px;text-align:center;margin-bottom:14px;">
+      <div style="font-size:52px;font-weight:800;letter-spacing:18px;color:#ffffff;font-family:'Courier New',Courier,monospace;line-height:1;padding-left:18px;">
         ${code}
       </div>
-      <div style="margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:5px 14px;">
-        <span style="font-size:11px;color:rgba(196,181,253,0.7);letter-spacing:0.8px;text-transform:uppercase;font-weight:600;">Натисни за автоматично попълване</span>
+      <div style="margin-top:14px;display:inline-block;background:#2d1f6e;border:1px solid #8b5cf6;border-radius:20px;padding:5px 14px;">
+        <span style="font-size:11px;color:#c4b5fd;letter-spacing:0.8px;text-transform:uppercase;font-weight:600;">Натисни за автоматично попълване</span>
       </div>
     </a>
 
-    <p style="margin:0 0 28px;color:rgba(255,255,255,0.3);font-size:12px;text-align:center;">
-      или го въведи ръчно в приложението · важи <strong style="color:rgba(255,255,255,0.45);">24 часа</strong>
+    <p style="margin:0 0 28px;color:#c4b5fd;font-size:12px;text-align:center;">
+      или го въведи ръчно в приложението · важи <strong style="color:#ffffff;">24 часа</strong>
     </p>
 
     <!-- Security notice -->
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 18px;">
-      <p style="margin:0;color:rgba(255,255,255,0.35);font-size:12px;line-height:1.65;">
+    <div style="background:#1e1a4a;border:1px solid #6366f1;border-radius:10px;padding:14px 18px;">
+      <p style="margin:0;color:#c4b5fd;font-size:12px;line-height:1.65;">
         🔒&nbsp; Ако не си създавал акаунт в MuziMind, можеш спокойно да игнорираш този имейл.
         Кодът изтича автоматично.
       </p>
@@ -156,39 +156,39 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
 
   const html = emailWrapper(`
-    <h1 style="margin:0 0 10px;color:#fff;font-size:22px;font-weight:600;text-align:center;">
+    <h1 style="margin:0 0 10px;color:#ffffff;font-size:22px;font-weight:600;text-align:center;">
       Нулиране на паролата
     </h1>
-    <p style="margin:0 0 28px;color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;text-align:center;">
-      Здравей, <strong style="color:rgba(255,255,255,0.75);">${username}</strong>! Получихме заявка
+    <p style="margin:0 0 28px;color:#c4b5fd;font-size:14px;line-height:1.7;text-align:center;">
+      Здравей, <strong style="color:#ffffff;">${username}</strong>! Получихме заявка
       за нулиране на паролата за твоя акаунт.
     </p>
 
     <!-- CTA Button -->
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${resetUrl}"
-         style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;letter-spacing:0.3px;box-shadow:0 4px 20px rgba(99,102,241,0.35);">
+         style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:10px;font-size:16px;font-weight:600;letter-spacing:0.3px;box-shadow:0 4px 24px rgba(99,102,241,0.5);">
         Нулирай паролата
       </a>
     </div>
 
     <!-- Fallback URL -->
-    <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.18);border-radius:10px;padding:14px 18px;margin-bottom:14px;">
-      <p style="margin:0 0 6px;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:0.5px;text-transform:uppercase;font-weight:600;">
+    <div style="background:#1e1a4a;border:1px solid #6366f1;border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+      <p style="margin:0 0 6px;color:#c4b5fd;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;font-weight:600;">
         Или копирай линка
       </p>
-      <p style="margin:0;color:rgba(167,139,250,0.6);font-size:11px;word-break:break-all;font-family:'Courier New',monospace;line-height:1.5;">
+      <p style="margin:0;color:#a78bfa;font-size:11px;word-break:break-all;font-family:'Courier New',monospace;line-height:1.5;">
         ${resetUrl}
       </p>
     </div>
 
-    <p style="margin:0 0 20px;color:rgba(255,255,255,0.3);font-size:12px;text-align:center;">
-      Линкът е валиден <strong style="color:rgba(255,255,255,0.45);">1 час</strong>
+    <p style="margin:0 0 20px;color:#c4b5fd;font-size:12px;text-align:center;">
+      Линкът е валиден <strong style="color:#ffffff;">1 час</strong>
     </p>
 
     <!-- Security notice -->
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 18px;">
-      <p style="margin:0;color:rgba(255,255,255,0.35);font-size:12px;line-height:1.65;">
+    <div style="background:#1e1a4a;border:1px solid #6366f1;border-radius:10px;padding:14px 18px;">
+      <p style="margin:0;color:#c4b5fd;font-size:12px;line-height:1.65;">
         🔒&nbsp; Ако не си поискал нулиране на паролата, игнорирай имейла — акаунтът ти е в безопасност.
         Линкът изтича автоматично след 1 час.
       </p>

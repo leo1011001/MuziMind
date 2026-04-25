@@ -575,6 +575,32 @@ app.put('/api/profile', requireAuth, async (req, res) => {
   }
 });
 
+// Change password from profile
+app.put('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Попълнете всички полета' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Новата парола трябва да е поне 6 символа' });
+
+    const user = await db.getUserById(userId);
+    if (!user) return res.status(404).json({ error: 'Потребителят не е намерен' });
+
+    const bcrypt = await import('bcryptjs');
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(401).json({ error: 'Грешна текуща парола' });
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await db.updateUser(userId, { password: hashed } as any);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
 // Request profile verification
 app.post('/api/profile/request-verification', requireAuth, async (req, res) => {
   try {
