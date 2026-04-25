@@ -82,14 +82,14 @@ export const Navigation: React.FC = () => {
             <FaInfoCircle /> За нас
           </Link>
 
-          {loading ? null : user ? (
+          {user ? (
             <div className="nav-user-section">
               <span className="nav-username">{user.username}</span>
               <button className="nav-logout" onClick={handleLogout}>
                 <FaSignOutAlt /> Изход
               </button>
             </div>
-          ) : (
+          ) : loading ? null : (
             <Link to="/login" className={`nav-link login-link ${isActive('/login') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
               Вход
             </Link>
