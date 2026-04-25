@@ -6,8 +6,7 @@ import cors from 'cors';
 import session from 'express-session';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
 import {
@@ -25,8 +24,6 @@ declare module 'express-session' {
   }
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 console.log('Loaded LASTFM_API_KEY:', process.env.LASTFM_API_KEY ? 'YES' : 'NO');
 console.log('Loaded MONGODB_URI:', process.env.MONGODB_URI ? 'YES' : 'NO');
