@@ -42,22 +42,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in (e.g., from localStorage or token)
     const checkAuth = async () => {
       try {
-        // Call server to check session (uses cookies)
         const resp = await fetch(`${API_URL}/api/user`, { credentials: 'include' });
         if (resp.ok) {
           const userData = await resp.json();
           setUser(userData as User);
+          // Cache for mobile Safari which blocks cross-site cookies
+          sessionStorage.setItem('mz_user', JSON.stringify(userData));
+        } else {
+          // Cookie rejected (mobile Safari ITP) — fall back to sessionStorage cache
+          const cached = sessionStorage.getItem('mz_user');
+          if (cached) setUser(JSON.parse(cached) as User);
         }
-      } catch (error) {
-        console.error('Auth check failed:', error);
+      } catch {
+        const cached = sessionStorage.getItem('mz_user');
+        if (cached) setUser(JSON.parse(cached) as User);
       } finally {
         setLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 
@@ -79,8 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      // server returns user object
       setUser(data.user);
+      sessionStorage.setItem('mz_user', JSON.stringify(data.user));
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -158,6 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', e);
     } finally {
       setUser(null);
+      sessionStorage.removeItem('mz_user');
     }
   };
 
