@@ -19,7 +19,10 @@ import crypto from 'crypto';
 // ─── Transporter ────────────────────────────────────────────────────────────
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // TLS on port 587
+  family: 4,     // force IPv4 — Railway blocks IPv6 SMTP
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
