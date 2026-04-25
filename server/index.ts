@@ -4,6 +4,7 @@ import './loadEnv.ts';
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { join } from 'path';
@@ -84,10 +85,16 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'muzimind-dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
+  // Persist sessions in MongoDB — survives restarts, no memory leaks
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60, // 1 day in seconds
+    autoRemove: 'native',
+  }),
   cookie: {
     secure: isProd,
     httpOnly: true,
-    sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-origin cookies in prod
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -1287,4 +1294,14 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
   console.log('\n🛑 Received SIGTERM, shutting down gracefully...\n');
   process.exit(0);
+});
+
+// Prevent unhandled promise rejections from crashing the server
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled promise rejection (server will continue):', reason);
+});
+
+// Prevent uncaught exceptions from crashing the server
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught exception (server will continue):', err.message);
 });
