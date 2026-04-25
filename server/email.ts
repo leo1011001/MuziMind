@@ -1,33 +1,22 @@
 /**
  * MuziMind Email Service
  *
- * Uses Nodemailer + Gmail SMTP (free, no external service required).
+ * Uses Resend (https://resend.com) — HTTPS API, works on Railway.
  *
- * Setup in .env:
- *   EMAIL_USER=youraddress@gmail.com
- *   EMAIL_PASS=xxxx xxxx xxxx xxxx   ← Gmail "App Password"
- *
- * To create a Gmail App Password:
- *   1. Go to myaccount.google.com → Security → 2-Step Verification
- *   2. Scroll to "App passwords" and generate one for "Mail / Other"
- *   3. Paste the 16-char password (spaces optional) into EMAIL_PASS
+ * Setup in .env / Railway variables:
+ *   RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+ *   EMAIL_FROM=noreply@muzimind.com        ← must match a verified domain in Resend
+ *                                            or use "onboarding@resend.dev" for testing
  */
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import crypto from 'crypto';
 
-// ─── Transporter ────────────────────────────────────────────────────────────
+// ─── Client ─────────────────────────────────────────────────────────────────
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // TLS on port 587
-  family: 4,     // force IPv4 — Railway blocks IPv6 SMTP
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const FROM_ADDRESS = process.env.EMAIL_FROM || 'MuziMind <onboarding@resend.dev>';
 
 // ─── Token helpers ──────────────────────────────────────────────────────────
 
@@ -138,12 +127,14 @@ export async function sendVerificationEmail(
     </div>
   `);
 
-  await transporter.sendMail({
-    from: `"MuziMind" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [toEmail],
     subject: `${code} е твоят код за верификация — MuziMind`,
     html,
   });
+
+  if (error) throw new Error(error.message);
 }
 
 // ─── Password reset email ────────────────────────────────────────────────────
@@ -195,25 +186,22 @@ export async function sendPasswordResetEmail(
     </div>
   `);
 
-  await transporter.sendMail({
-    from: `"MuziMind" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: [toEmail],
     subject: 'Нулиране на парола — MuziMind',
     html,
   });
+
+  if (error) throw new Error(error.message);
 }
 
-// ─── Verify transporter (non-fatal, just logs) ───────────────────────────────
+// ─── Startup check (non-fatal) ───────────────────────────────────────────────
 
 export async function verifyEmailConfig(): Promise<void> {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️  EMAIL_USER / EMAIL_PASS not set — email sending disabled');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️  RESEND_API_KEY not set — email sending disabled');
     return;
   }
-  try {
-    await transporter.verify();
-    console.log(`✅ Email service ready (${process.env.EMAIL_USER})`);
-  } catch (err) {
-    console.warn('⚠️  Email transporter could not connect:', (err as Error).message);
-  }
+  console.log(`✅ Email service ready (Resend · from: ${FROM_ADDRESS})`);
 }
