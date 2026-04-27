@@ -81,16 +81,25 @@ app.use(bodyParser.json());
 app.use(express.json());
 
 const isProd = process.env.NODE_ENV === 'production';
+
+// Build session store separately so we can attach an error handler
+const sessionStore = MongoStore.create({
+  mongoUrl: process.env.MONGODB_URI,
+  ttl: 24 * 60 * 60,       // session lifetime: 1 day
+  autoRemove: 'native',
+  touchAfter: 3600,         // re-touch at most once per hour, not on every request
+});
+// Suppress the harmless "session not found on touch" noise from connect-mongo
+sessionStore.on('error', (err: Error) => {
+  if (err.message?.includes('Unable to find the session to touch')) return;
+  console.error('Session store error:', err);
+});
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'muzimind-dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
-  // Persist sessions in MongoDB — survives restarts, no memory leaks
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60, // 1 day in seconds
-    autoRemove: 'native',
-  }),
+  store: sessionStore,
   cookie: {
     secure: isProd,
     httpOnly: true,
