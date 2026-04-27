@@ -589,11 +589,11 @@ app.put('/api/auth/change-password', requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Потребителят не е намерен' });
 
     const bcrypt = await import('bcryptjs');
-    const valid = await bcrypt.compare(currentPassword, user.password);
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) return res.status(401).json({ error: 'Грешна текуща парола' });
 
     const hashed = await bcrypt.hash(newPassword, 12);
-    await db.updateUser(userId, { password: hashed } as any);
+    await db.updateUser(userId, { passwordHash: hashed } as any);
     res.json({ success: true });
   } catch (error) {
     console.error('Change password error:', error);
