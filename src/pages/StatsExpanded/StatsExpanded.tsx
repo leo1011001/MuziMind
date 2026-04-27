@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaChartBar, FaMusic, FaTrophy, FaFire, FaArrowLeft } from 'react-icons/fa';
+import { FaChartBar, FaMusic, FaTrophy, FaFire, FaArrowLeft, FaHeadphones } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './Stats.css';
 
@@ -59,7 +59,7 @@ export const StatsPage: React.FC = () => {
 
           <div className="stat-card">
             <div className="stat-icon"><FaTrophy /></div>
-            <div className="stat-value">{stats.topArtists?.length || 0}</div>
+            <div className="stat-value">{(stats.totalArtists ?? stats.topArtists?.length ?? 0).toLocaleString()}</div>
             <div className="stat-label">Любими артисти</div>
           </div>
 
@@ -72,40 +72,74 @@ export const StatsPage: React.FC = () => {
       )}
 
       <div className="stats-lists-grid">
-        <div className="stats-section">
-          <h2><FaTrophy /> Топ артисти</h2>
-          <div className="top-list scrollable">
-            {stats?.topArtists?.map((artist: any, i: number) => (
-              <div key={i} className="list-item">
-                <div className="rank">{i + 1}</div>
-                <div className="info">
-                  <div className="name">{artist.name}</div>
-                  <div className="count">{artist.playCount} слушания</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="stats-section">
-          <h2><FaMusic /> Топ песни</h2>
-          <div className="top-list scrollable">
-            {stats?.topSongs && stats.topSongs.length > 0 ? (
-              stats.topSongs.map((song: any, i: number) => (
-                <div key={i} className="list-item">
-                  <div className="rank">{i + 1}</div>
-                  <div className="info">
-                    <div className="name">{song.name}</div>
-                    <div className="count">{song.artist} · {song.playCount} слушания</div>
+        {/* Top Artists bar ranking */}
+        {stats?.topArtists?.length > 0 && (
+          <div className="glass-card stats-bar-section">
+            <h2><FaTrophy /> Топ артисти</h2>
+            <div className="stats-bar-list">
+              {(() => {
+                const artists = stats.topArtists.slice(0, 10);
+                const max = artists[0]?.playCount || 1;
+                return artists.map((a: any, i: number) => (
+                  <div key={i} className="stats-bar-row">
+                    <span className="stats-bar-rank">#{i + 1}</span>
+                    <span className="stats-bar-label">{a.name}</span>
+                    <div className="stats-bar-track">
+                      <div className="stats-bar-fill" style={{ width: `${Math.round((a.playCount / max) * 100)}%` }} />
+                    </div>
+                    <span className="stats-bar-count">{a.playCount}</span>
                   </div>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Top Songs bar ranking */}
+        {stats?.topSongs?.length > 0 && (
+          <div className="glass-card stats-bar-section">
+            <h2><FaMusic /> Топ песни</h2>
+            <div className="stats-bar-list">
+              {(() => {
+                const songs = stats.topSongs.slice(0, 9);
+                const max = songs[0]?.playCount || 1;
+                return songs.map((s: any, i: number) => (
+                  <div key={i} className="stats-bar-row">
+                    <span className="stats-bar-rank">#{i + 1}</span>
+                    <span className="stats-bar-label">{s.name}<span className="stats-bar-sublabel"> · {s.artist}</span></span>
+                    <div className="stats-bar-track">
+                      <div className="stats-bar-fill" style={{ width: `${Math.round((s.playCount / max) * 100)}%` }} />
+                    </div>
+                    <span className="stats-bar-count">{s.playCount}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Top Genres bar chart */}
+      {stats?.topTagsWithCounts?.length > 0 && (
+        <div className="glass-card stats-bar-section stats-genres-section">
+          <h2><FaHeadphones /> Топ жанрове</h2>
+          <div className="stats-bar-list">
+            {(() => {
+              const tags = stats.topTagsWithCounts.slice(0, 8);
+              const max = tags[0]?.count || 1;
+              return tags.map((t: any, i: number) => (
+                <div key={i} className="stats-bar-row">
+                  <span className="stats-bar-label">{t.tag}</span>
+                  <div className="stats-bar-track">
+                    <div className="stats-bar-fill stats-bar-fill--genre" style={{ width: `${Math.round((t.count / max) * 100)}%` }} />
+                  </div>
+                  <span className="stats-bar-count">{t.count}</span>
                 </div>
-              ))
-            ) : (
-              <p className="no-data">Няма данни за песни</p>
-            )}
+              ));
+            })()}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
