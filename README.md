@@ -6,6 +6,15 @@
 
 ---
 
+## Test Accounts
+
+| Role | Email | Password |
+|---|---|---|
+| User (tester) | leonstanev12@gmail.com | Test@123 |
+| Admin | admin@localhost | adminpass |
+
+---
+
 ## Features
 
 - **Daily Musical Reading** — AI-generated 4-part reflection on your recent listening habits (Groq / Llama 3.3 70B)
