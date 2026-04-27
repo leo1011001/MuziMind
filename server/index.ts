@@ -585,7 +585,7 @@ app.put('/api/auth/change-password', requireAuth, async (req, res) => {
     if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Попълнете всички полета' });
     if (newPassword.length < 6) return res.status(400).json({ error: 'Новата парола трябва да е поне 6 символа' });
 
-    const user = await db.getUserById(userId);
+    const user = await db.findUserById(userId);
     if (!user) return res.status(404).json({ error: 'Потребителят не е намерен' });
 
     const bcrypt = await import('bcryptjs');
