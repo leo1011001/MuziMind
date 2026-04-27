@@ -6,7 +6,7 @@ import { QuickStats } from '../../components/stats/QuickStats';
 import { MusicPrediction } from '../../components/music/MusicPrediction';
 import { NowPlaying } from '../../components/music/NowPlaying';
 import { UserListeningHistory } from '../../components/music/UserListeningHistory';
-import { FaMusic, FaSync, FaExclamationTriangle, FaLink, FaCheckCircle, FaTimesCircle, FaChartBar, FaRobot, FaHeadphones, FaUserPlus, FaSignInAlt, FaStar, FaGlobe } from 'react-icons/fa';
+import { FaMusic, FaSync, FaExclamationTriangle, FaLink, FaCheckCircle, FaTimesCircle, FaChartBar, FaRobot, FaHeadphones, FaUserPlus, FaSignInAlt, FaStar, FaGlobe, FaLastfm } from 'react-icons/fa';
 import './Home.css';
 
 interface HomeStats {
@@ -91,6 +91,12 @@ export const Home: React.FC = () => {
   const [syncMessage, setSyncMessage] = useState<string>('');
   const [syncSuccess, setSyncSuccess] = useState<boolean>(true);
 
+  // Last.fm connect modal
+  const [showLastfmModal, setShowLastfmModal] = useState(false);
+  const [lastfmInput, setLastfmInput] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [connectMsg, setConnectMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
@@ -157,6 +163,31 @@ export const Home: React.FC = () => {
     }
   };
 
+  const handleConnectLastfm = async () => {
+    if (!lastfmInput.trim()) return;
+    setConnecting(true);
+    setConnectMsg(null);
+    try {
+      const res = await fetch(`${API_URL}/api/profile/lastfm`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lastfmUsername: lastfmInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setConnectMsg({ text: `✓ Свързан с ${data.lastfmUsername}! Синхронизираме...`, ok: true });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        setConnectMsg({ text: data.error || 'Грешка при свързване', ok: false });
+      }
+    } catch {
+      setConnectMsg({ text: 'Грешка при свързване', ok: false });
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     const name = user?.username || 'гост';
@@ -218,12 +249,54 @@ export const Home: React.FC = () => {
           <div className="warning-content">
             <h3>Свържи Last.fm</h3>
             <p>Свържи своя Last.fm профил, за да видиш историята си на слушане и да получиш персонализирани прозрения.</p>
-            <button
-              className="glass-button primary"
-              onClick={() => window.location.href = '/profile?tab=connections'}
-            >
+            <button className="glass-button primary" onClick={() => { setShowLastfmModal(true); setConnectMsg(null); setLastfmInput(''); }}>
               <FaLink /> Свържи сега
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Last.fm connect modal */}
+      {showLastfmModal && (
+        <div className="pw-modal-overlay" onClick={() => !connecting && setShowLastfmModal(false)}>
+          <div className="pw-modal glass-card" onClick={e => e.stopPropagation()}>
+            <h3><FaLastfm /> Свържи Last.fm профил</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '0 0 1.25rem' }}>
+              Въведи Last.fm потребителското си име. Ще го проверим и ще го запишем в профила ти.
+            </p>
+            <div className="profile-form">
+              <div className="form-group">
+                <label>Last.fm потребителско име</label>
+                <input
+                  type="text"
+                  value={lastfmInput}
+                  onChange={e => setLastfmInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !connecting && handleConnectLastfm()}
+                  placeholder="напр. leo1011001"
+                  autoFocus
+                  disabled={connecting}
+                />
+              </div>
+
+              {connectMsg && (
+                <div className={`profile-message ${connectMsg.ok ? 'success' : 'error'}`}>
+                  {connectMsg.ok ? <FaCheckCircle /> : <FaTimesCircle />} {connectMsg.text}
+                </div>
+              )}
+
+              <div className="profile-form-actions">
+                <button
+                  className="glass-button save-btn"
+                  onClick={handleConnectLastfm}
+                  disabled={connecting || !lastfmInput.trim()}
+                >
+                  <FaLastfm /> {connecting ? 'Проверяване...' : 'Свържи'}
+                </button>
+                <button className="glass-button" onClick={() => setShowLastfmModal(false)} disabled={connecting}>
+                  Отказ
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -584,6 +584,25 @@ app.put('/api/profile', requireAuth, async (req, res) => {
   }
 });
 
+// Connect / update Last.fm username
+app.put('/api/profile/lastfm', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { lastfmUsername } = req.body;
+    if (!lastfmUsername?.trim()) return res.status(400).json({ error: 'Въведи Last.fm потребителско име' });
+
+    // Validate the username exists on Last.fm
+    const info = await lastFMService.getUserInfo(lastfmUsername.trim());
+    if (!info?.user) return res.status(404).json({ error: 'Last.fm профилът не е намерен. Провери потребителското си име.' });
+
+    await db.updateUser(userId, { lastfmUsername: lastfmUsername.trim() } as any);
+    res.json({ success: true, lastfmUsername: lastfmUsername.trim() });
+  } catch (error) {
+    console.error('Connect lastfm error:', error);
+    res.status(500).json({ error: 'Грешка при свързване с Last.fm' });
+  }
+});
+
 // Change password from profile
 app.put('/api/auth/change-password', requireAuth, async (req, res) => {
   try {
