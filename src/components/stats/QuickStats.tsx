@@ -18,8 +18,8 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ stats }) => {
   }
 
   const totalScrobbles = stats.totalScrobbles || 0;
-  const topArtistsCount = stats.topArtists?.length || 0;
-  const topSongsCount = stats.topSongs?.length || 0;
+  const totalArtists = stats.totalArtists ?? stats.topArtists?.length ?? 0;
+  const totalUniqueSongs = stats.totalUniqueSongs ?? stats.topSongs?.length ?? 0;
 
   // Find peak listening hour
   const listeningHours: number[] = stats.listeningHours || [];
@@ -50,7 +50,7 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ stats }) => {
         <div className="stat-card">
           <div className="stat-icon"><FaMicrophone /></div>
           <div className="stat-info">
-            <div className="stat-value">{topArtistsCount}</div>
+            <div className="stat-value">{totalArtists.toLocaleString()}</div>
             <div className="stat-label">Изпълнители</div>
           </div>
         </div>
@@ -66,8 +66,8 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ stats }) => {
         <div className="stat-card">
           <div className="stat-icon"><FaCompactDisc /></div>
           <div className="stat-info">
-            <div className="stat-value">{topSongsCount}</div>
-            <div className="stat-label">Топ песни</div>
+            <div className="stat-value">{totalUniqueSongs.toLocaleString()}</div>
+            <div className="stat-label">Песни</div>
           </div>
         </div>
 

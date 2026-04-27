@@ -190,14 +190,15 @@ export class DataSyncService {
   }
   
   async getUserListeningData(userId: string) {
-    const [scrobbles, topArtistsRaw, user] = await Promise.all([
+    const [scrobbles, topArtistsRaw, user, totalArtistsCount] = await Promise.all([
       db.getRecentScrobbles(userId, 500),
       db.artistStats
         .find({ userId: new ObjectId(userId), artist: { $exists: true, $ne: '' } })
         .sort({ playCount: -1 })
         .limit(10)
         .toArray(),
-      db.findUserById(userId)
+      db.findUserById(userId),
+      db.artistStats.countDocuments({ userId: new ObjectId(userId), artist: { $exists: true, $ne: '' } })
     ]);
     let topArtists = topArtistsRaw.filter(a => a.artist && a.artist.trim() !== '');
 
@@ -237,9 +238,9 @@ export class DataSyncService {
       }
       songMap[key].playCount++;
     });
-    let topSongs = Object.values(songMap)
-      .sort((a, b) => b.playCount - a.playCount)
-      .slice(0, 9);
+    const allUniqueSongs = Object.values(songMap).sort((a, b) => b.playCount - a.playCount);
+    const totalUniqueSongs = allUniqueSongs.length;
+    let topSongs = allUniqueSongs.slice(0, 9);
     // If no scrobbles in DB, fallback to Last.fm API top tracks
     if (topSongs.length === 0 && user?.lastfmUsername) {
       try {
@@ -257,6 +258,8 @@ export class DataSyncService {
     }
     return {
       totalScrobbles: user?.stats?.totalScrobbles || 0,
+      totalArtists: totalArtistsCount,
+      totalUniqueSongs,
       topArtists: topArtists.map(a => ({
         name: a.artist,
         playCount: a.playCount
