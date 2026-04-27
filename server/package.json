@@ -23,6 +23,6 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "server": "node --dns-result-order=ipv4first node_modules/.bin/ts-node --project tsconfig.json --transpile-only index.ts"
+    "server": "ts-node --project tsconfig.json --transpile-only index.ts"
   }
 }
