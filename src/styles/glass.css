@@ -480,6 +480,64 @@
 }
 [data-theme="light"] .edit-form-group select option { background: #f0ecff; color: #1a0e3d; }
 
+/* ── Recommendations page — missing light overrides ─────────────── */
+[data-theme="light"] .rec-second-peak { color: rgba(91, 69, 144, 0.65) !important; }
+[data-theme="light"] .rec-peak-display {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+}
+[data-theme="light"] .rec-loading p { color: #5b4590; }
+[data-theme="light"] .auth-prompt { color: #5b4590; }
+[data-theme="light"] .rec-loading-spinner {
+  border-color: rgba(99,102,241,0.15);
+  border-top-color: rgba(99,102,241,0.75);
+}
+[data-theme="light"] .rec-prediction-text { color: #3b2470; }
+[data-theme="light"] .rec-pattern-item {
+  background: rgba(99,102,241,0.05);
+  border-color: rgba(99,102,241,0.1);
+}
+[data-theme="light"] .rec-pattern-value { color: #1a0e3d; }
+[data-theme="light"] .rec-artist-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+  border-color: rgba(99,102,241,0.15);
+}
+[data-theme="light"] .rec-artist-card:hover {
+  background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(139,92,246,0.14));
+  border-color: rgba(99,102,241,0.28);
+}
+[data-theme="light"] .rec-artist-name { color: #1a0e3d; }
+[data-theme="light"] .rec-artist-score { color: #6b51a3; }
+[data-theme="light"] .rec-artist-story-hint { color: rgba(99,102,241,0.7); }
+[data-theme="light"] .rec-stories-strip-label { color: #6b51a3; }
+[data-theme="light"] .rec-story-name { color: #3b2470; }
+[data-theme="light"] .rec-story-bubble .rec-story-placeholder {
+  background: rgba(99,102,241,0.1);
+  color: rgba(99,102,241,0.7);
+}
+[data-theme="light"] .rec-genre-tag { color: #3b2470; }
+[data-theme="light"] .rec-genres-section h2,
+[data-theme="light"] .rec-patterns-section h2,
+[data-theme="light"] .rec-artists-section h2,
+[data-theme="light"] .rec-peak-section h2,
+[data-theme="light"] .rec-prediction-card h2 { color: #1a0e3d; -webkit-text-fill-color: #1a0e3d; }
+
+/* ── Stats bar chart — missing light overrides ─────────────────── */
+[data-theme="light"] .stats-bar-rank { color: #6366f1; }
+[data-theme="light"] .stats-bar-label { color: #1a0e3d; }
+[data-theme="light"] .stats-bar-sublabel { color: #6b51a3; }
+[data-theme="light"] .stats-bar-track { background: rgba(99,102,241,0.12); }
+[data-theme="light"] .stats-bar-fill { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+[data-theme="light"] .stats-bar-fill--genre { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+[data-theme="light"] .stats-bar-count { color: #6b51a3; }
+[data-theme="light"] .stats-bar-section h2 { color: #1a0e3d; -webkit-text-fill-color: #1a0e3d; }
+
+/* ── Home page — missing light overrides ────────────────────────── */
+[data-theme="light"] .last-sync { color: #6b51a3; }
+[data-theme="light"] .warning-card {
+  background: rgba(255, 240, 210, 0.85);
+  border-color: rgba(202,138,4,0.3);
+}
+
 /* ==================== */
 /* GLOBAL STYLES */
 /* ==================== */

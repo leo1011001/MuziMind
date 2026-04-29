@@ -64,10 +64,22 @@ export function DailyReading({ userId }: DailyReadingProps) {
     try {
       setInsightLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      // Cache insight per calendar day so it doesn't regenerate on every mount
+      const cacheKey = `mz_insight_${new Date().toDateString()}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setInsight(cached);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/api/reading/insight`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        if (data.insight) setInsight(data.insight);
+        if (data.insight) {
+          setInsight(data.insight);
+          sessionStorage.setItem(cacheKey, data.insight);
+        }
       }
     } catch {
       // silently fail — insight is optional
@@ -83,8 +95,9 @@ export function DailyReading({ userId }: DailyReadingProps) {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${API_URL}/api/reading/latest`, { credentials: 'include' });
       if (res.status === 404) {
-        // No reading at all — auto-generate
-        await generateNewReading();
+        // No reading yet — stop loading spinner immediately, then generate in background
+        setLoading(false);
+        generateNewReading();
         return;
       }
       if (!res.ok) throw new Error('Грешка при зареждане');
@@ -141,6 +154,21 @@ export function DailyReading({ userId }: DailyReadingProps) {
         <div className="loading-state">
           <div className="loading-spinner"></div>
           <p>Консултирам се с музикалния оракул...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No reading yet but currently generating one — show generating state
+  if (!reading && generating) {
+    return (
+      <div className="glass-card daily-reading loading">
+        <div className="reading-header">
+          <h3><FaHatWizard /> Дневен прочит</h3>
+        </div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Генерира се твоят дневен прочит...</p>
         </div>
       </div>
     );
