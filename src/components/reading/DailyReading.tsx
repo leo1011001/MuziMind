@@ -94,8 +94,11 @@ export function DailyReading({ userId }: DailyReadingProps) {
       const today = new Date();
       const isStale = readingDate.toDateString() !== today.toDateString();
       if (isStale) {
+        // Show yesterday's reading immediately so the UI isn't blank,
+        // then silently replace it once the new one is ready.
+        setReading(data);
         setLoading(false);
-        await generateNewReading();
+        generateNewReading();
         return;
       }
       setReading(data);
@@ -187,9 +190,12 @@ export function DailyReading({ userId }: DailyReadingProps) {
         <div className="header-left">
           <h3><FaHatWizard /> Дневен прочит</h3>
           <div className="reading-date">
-            {new Date(reading.date).toLocaleDateString('bg-BG', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            })}
+            {generating
+              ? <span style={{ opacity: 0.6, fontSize: '0.8rem' }}><span className="spinner-small" style={{ marginRight: 6 }} />Обновяване...</span>
+              : new Date(reading.date).toLocaleDateString('bg-BG', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                })
+            }
           </div>
         </div>
         <div className="mood-badge" style={{ backgroundColor: moodColor }}>

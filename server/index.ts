@@ -1246,6 +1246,33 @@ app.get('/api/predict', requireAuth, async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
     // @ts-ignore - syncService gets a dynamic method
     const prediction = await (syncService as any).predictForUser(userId);
+
+    // Override recommendedArtists with live Last.fm 7-day top artists so the
+    // carousel always reflects current listening, not potentially stale DB data.
+    const user = await db.findUserById(userId);
+    if (user?.lastfmUsername) {
+      try {
+        const liveResp = await lastFMService.getTopArtists(user.lastfmUsername, '7day', 5);
+        const liveArtists = (liveResp?.topartists?.artist || []).slice(0, 5);
+        if (liveArtists.length > 0) {
+          // Keep trending flag from DB prediction where names match
+          const predMap = new Map<string, any>(
+            (prediction.recommendedArtists || []).map((a: any) => [a.name.toLowerCase(), a])
+          );
+          prediction.recommendedArtists = liveArtists.map((a: any) => {
+            const pred = predMap.get(a.name.toLowerCase());
+            return {
+              name: a.name,
+              score: parseInt(a.playcount || '0'),
+              trending: pred?.trending ?? false,
+            };
+          });
+        }
+      } catch (e) {
+        console.warn('Live top-artists fetch failed, using DB prediction:', (e as any).message);
+      }
+    }
+
     res.json(prediction);
   } catch (error) {
     console.error('Prediction error:', error);
