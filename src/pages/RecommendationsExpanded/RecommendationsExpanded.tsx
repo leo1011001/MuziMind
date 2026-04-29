@@ -52,15 +52,15 @@ export const RecommendationsExpanded: React.FC = () => {
         const predData = predResult.status === 'fulfilled' ? predResult.value : null;
         if (predData) setPrediction(predData);
 
-        // Use live Last.fm top artists for the stories carousel
         const liveArtists: string[] = (topArtistsResult.status === 'fulfilled' && Array.isArray(topArtistsResult.value))
           ? topArtistsResult.value
           : [];
 
-        // Fallback to recommendedArtists from predict if live fetch returned nothing
-        const artistNames: string[] = liveArtists.length > 0
-          ? liveArtists
-          : (predData?.recommendedArtists || []).map((a: any) => a.name);
+        // Use recommendedArtists order for stories so the carousel matches the ranking list.
+        // Fall back to live Last.fm top artists if prediction failed.
+        const artistNames: string[] = predData?.recommendedArtists?.length > 0
+          ? predData.recommendedArtists.map((a: any) => a.name)
+          : liveArtists;
 
         if (artistNames.length > 0) {
           try {
