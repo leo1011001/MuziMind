@@ -438,6 +438,20 @@
 [data-theme="light"] .reading-content { color: #3b2470; }
 [data-theme="light"] .reading-date { color: #5b4590; }
 
+/* Препоръчано за теб — recommendation items */
+[data-theme="light"] .recommendation-item {
+  background: rgba(99, 102, 241, 0.07);
+  border-color: rgba(99, 102, 241, 0.18);
+}
+[data-theme="light"] .recommendation-item:hover {
+  background: rgba(99, 102, 241, 0.13);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+[data-theme="light"] .recommendation-reason { color: #6b51a3; }
+[data-theme="light"] .recommendation-track { color: #1a0e3d; }
+[data-theme="light"] .recommendation-rank { color: #3b2470; }
+[data-theme="light"] .recommendations-section h4 { color: #1a0e3d; -webkit-text-fill-color: #1a0e3d; }
+
 /* Quick stats light mode */
 [data-theme="light"] .quick-stat-value { color: #1a0e3d; }
 [data-theme="light"] .quick-stat-label { color: #5b4590; }
