@@ -45,6 +45,8 @@ const moodLabels: Record<string, string> = {
   mysterious: 'Мистериозен', creative: 'Творчески', balanced: 'Балансиран',
 };
 
+// localStorage so the reading survives across browser sessions —
+// the user sees their last reading instantly even on a fresh tab open.
 const READING_CACHE_KEY = 'mz_last_reading';
 
 export function DailyReading({ userId }: DailyReadingProps) {
@@ -95,7 +97,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
 
     // Immediately show the last cached reading so the UI is never blank on load.
     // This gives instant feedback even on slow server cold-starts.
-    const cached = sessionStorage.getItem(READING_CACHE_KEY);
+    const cached = localStorage.getItem(READING_CACHE_KEY);
     if (cached) {
       try {
         const cachedData: ReadingData = JSON.parse(cached);
@@ -120,7 +122,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       const data: ReadingData = await res.json();
 
       // Update the cache with the freshly fetched reading
-      sessionStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
+      localStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
 
       // Auto-regenerate if the stored reading is from a previous day
       const readingDate = new Date(data.date);
@@ -157,7 +159,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       });
       if (!res.ok) throw new Error('Грешка при генериране');
       const data = await res.json();
-      sessionStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
+      localStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
       setReading(data);
     } catch (err) {
       setError('Грешка при генериране на прочит');
