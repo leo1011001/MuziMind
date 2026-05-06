@@ -50,8 +50,15 @@ const moodLabels: Record<string, string> = {
 const READING_CACHE_KEY = 'mz_last_reading';
 
 export function DailyReading({ userId }: DailyReadingProps) {
-  const [reading, setReading] = useState<ReadingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Lazy initialisers run synchronously before the first render, so the cached
+  // reading is shown immediately — no spinner flash even on a cold page load.
+  const [reading, setReading] = useState<ReadingData | null>(() => {
+    try {
+      const cached = localStorage.getItem(READING_CACHE_KEY);
+      return cached ? (JSON.parse(cached) as ReadingData) : null;
+    } catch { return null; }
+  });
+  const [loading, setLoading] = useState(() => !localStorage.getItem(READING_CACHE_KEY));
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [insight, setInsight] = useState<string | null>(null);
@@ -94,26 +101,14 @@ export function DailyReading({ userId }: DailyReadingProps) {
 
   const fetchReading = async () => {
     setError(null);
-
-    // Immediately show the last cached reading so the UI is never blank on load.
-    // This gives instant feedback even on slow server cold-starts.
-    const cached = localStorage.getItem(READING_CACHE_KEY);
-    if (cached) {
-      try {
-        const cachedData: ReadingData = JSON.parse(cached);
-        setReading(cachedData);
-        setLoading(false); // already have content — no spinner needed
-      } catch { /* corrupt cache, ignore */ }
-    }
+    // `reading` and `loading` are already initialised from localStorage by the
+    // lazy useState above, so there's nothing extra to do before the fetch.
+    const hasCached = !!reading; // capture snapshot for the catch block below
 
     try {
-      // If nothing was cached, keep the loading spinner; otherwise fetch silently.
-      if (!cached) setLoading(true);
-
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${API_URL}/api/reading/latest`, { credentials: 'include' });
       if (res.status === 404) {
-        // No reading yet — stop loading spinner immediately, then generate in background
         setLoading(false);
         generateNewReading();
         return;
@@ -121,16 +116,10 @@ export function DailyReading({ userId }: DailyReadingProps) {
       if (!res.ok) throw new Error('Грешка при зареждане');
       const data: ReadingData = await res.json();
 
-      // Update the cache with the freshly fetched reading
       localStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
 
-      // Auto-regenerate if the stored reading is from a previous day
-      const readingDate = new Date(data.date);
-      const today = new Date();
-      const isStale = readingDate.toDateString() !== today.toDateString();
+      const isStale = new Date(data.date).toDateString() !== new Date().toDateString();
       if (isStale) {
-        // Show yesterday's reading immediately so the UI isn't blank,
-        // then silently replace it once the new one is ready.
         setReading(data);
         setLoading(false);
         generateNewReading();
@@ -138,8 +127,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       }
       setReading(data);
     } catch (err) {
-      // If we already have a cached reading on-screen, don't replace it with an error banner.
-      if (!cached) setError('Грешка при зареждане на прочита');
+      if (!hasCached) setError('Грешка при зареждане на прочита');
       console.error('Error fetching reading:', err);
     } finally {
       setLoading(false);
