@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { authFetch } from '../../utils/authFetch';
 import { FaSmile, FaHistory, FaBolt, FaCloud, FaCompass, FaHeart, FaBullseye, FaCloudRain, FaHatWizard, FaPaintBrush, FaBalanceScale, FaMusic, FaExclamationTriangle, FaBook, FaStar, FaBrain } from 'react-icons/fa';
 import './ReadingComponents.css';
 
@@ -84,7 +85,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
         return;
       }
 
-      const res = await fetch(`${API_URL}/api/reading/insight`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/reading/insight`);
       if (res.ok) {
         const data = await res.json();
         if (data.insight) {
@@ -107,7 +108,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const res = await fetch(`${API_URL}/api/reading/latest`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/reading/latest`);
       if (res.status === 404) {
         setLoading(false);
         generateNewReading();
@@ -139,9 +140,8 @@ export function DailyReading({ userId }: DailyReadingProps) {
       setGenerating(true);
       setError(null);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const res = await fetch(`${API_URL}/api/reading/generate`, {
+      const res = await authFetch(`${API_URL}/api/reading/generate`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
       });

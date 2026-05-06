@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaTrash, FaCheck, FaTimes, FaUserShield, FaUser, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaClock, FaUsers, FaEdit, FaUserClock, FaSave } from 'react-icons/fa';
 import './Admin.css';
@@ -47,7 +48,7 @@ const Admin: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/users`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/admin/users`);
       if (res.status === 403) {
         navigate('/');
         return;
@@ -64,9 +65,8 @@ const Admin: React.FC = () => {
 
   const updateUser = async (id: string, updates: Record<string, any>) => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+      const res = await authFetch(`${API_URL}/api/admin/users/${id}`, {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
@@ -84,9 +84,8 @@ const Admin: React.FC = () => {
   const deleteUser = async (id: string, username: string) => {
     if (!window.confirm(`Сигурни ли сте, че искате да изтриете ${username}?`)) return;
     try {
-      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+      const res = await authFetch(`${API_URL}/api/admin/users/${id}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

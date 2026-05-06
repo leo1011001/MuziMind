@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authFetch } from '../utils/authFetch';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -44,22 +45,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const resp = await fetch(`${API_URL}/api/user`, { credentials: 'include' });
+        // authFetch sends the session cookie AND the Bearer JWT (if stored),
+        // so this works on both desktop (cookie) and Safari ITP (JWT).
+        const resp = await authFetch(`${API_URL}/api/user`);
         if (resp.ok) {
           const userData = await resp.json();
           setUser(userData as User);
-          // Cache for quick subsequent loads
           sessionStorage.setItem('mz_user', JSON.stringify(userData));
         } else {
-          // Server says not authenticated (e.g. 401) — the session is gone.
-          // Clear any stale sessionStorage so the user sees the login page rather
-          // than a broken "logged-in" UI where every API call returns 401.
+          // Server says not authenticated — clear stale cache so the user
+          // sees the login page rather than a broken authenticated UI.
           sessionStorage.removeItem('mz_user');
+          localStorage.removeItem('mz_token');
           setUser(null);
         }
       } catch {
-        // Network error (offline, DNS failure, etc.) — use the cached user optimistically
-        // so the app still renders. API calls will fail but at least the UI shows something.
+        // Network error — use cached user optimistically
         const cached = sessionStorage.getItem('mz_user');
         if (cached) {
           try { setUser(JSON.parse(cached) as User); } catch { /* ignore */ }
@@ -89,6 +90,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
+      // Store JWT so Safari ITP users can authenticate subsequent API calls
+      // via the Authorization: Bearer header (authFetch adds it automatically).
+      if (data.token) {
+        localStorage.setItem('mz_token', data.token);
+      }
       setUser(data.user);
       sessionStorage.setItem('mz_user', JSON.stringify(data.user));
     } catch (error) {
@@ -132,13 +138,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const syncWithLastFM = async (_lastfmUsername?: string) => {
-    // Do NOT touch the global `loading` flag — this runs in the background and
-    // should not trigger a full-page loading state or block the UI.
+    // Do NOT touch the global `loading` flag — this runs in the background.
     try {
-      const response = await fetch(`${API_URL}/api/sync/lastfm`, {
+      const response = await authFetch(`${API_URL}/api/sync/lastfm`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -161,9 +165,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     // Clear state immediately so the UI transitions to the login page at once.
-    // Fire the server-side session destruction in the background — no need to await it.
     setUser(null);
     sessionStorage.removeItem('mz_user');
+    localStorage.removeItem('mz_token');
+    // Fire server-side session destruction in the background.
     fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
   };
 

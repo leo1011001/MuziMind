@@ -49,6 +49,8 @@
   border-radius: 16px;
   padding: 2rem;
   text-align: center;
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }

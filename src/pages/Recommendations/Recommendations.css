@@ -41,6 +41,8 @@
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
   border: 1px solid rgba(99, 102, 241, 0.3);
   border-radius: 16px;
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   animation: slideIn 0.5s ease;
 }
@@ -297,6 +299,8 @@
   padding: 3rem 2rem;
   text-align: center;
   margin-bottom: 2rem;
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   animation: slideIn 0.5s ease;
 }
@@ -421,6 +425,8 @@
   padding: 3rem 2rem;
   text-align: center;
   margin-bottom: 2rem;
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   animation: slideIn 0.5s ease;
 }

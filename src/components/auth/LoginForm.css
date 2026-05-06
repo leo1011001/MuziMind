@@ -1,4 +1,4 @@
-﻿/* ===== Auth Forms (Login + Register) ===== */
+/* ===== Auth Forms (Login + Register) ===== */
 
 .auth-form {
   max-width: 560px;
@@ -7,6 +7,8 @@
   padding: 2.5rem 3rem;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
   border-radius: 16px;
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);

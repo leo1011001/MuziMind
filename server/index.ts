@@ -10,6 +10,7 @@ import rateLimit from 'express-rate-limit';
 import { join } from 'path';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import {
   generateVerificationCode,
   generateResetToken,
@@ -170,12 +171,29 @@ async function initServer() {
   }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'muzimind-jwt-fallback';
+
 // Auth middleware - DEFINE THIS BEFORE ROUTES
+// Accepts either a session cookie (desktop browsers) OR a Bearer JWT token
+// (Safari on iOS where ITP blocks cross-site session cookies).
 const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: 'Не сте влезли в системата' });
+  // 1. Session cookie — works on Chrome/Firefox and desktop Safari
+  if (req.session.userId) return next();
+
+  // 2. Bearer JWT — fallback for Safari ITP / mobile browsers that strip cross-site cookies
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+      req.session.userId = payload.userId; // hydrate session so downstream code works as-is
+      return next();
+    } catch {
+      // Invalid / expired token — fall through to 401
+    }
   }
-  next();
+
+  return res.status(401).json({ error: 'Не сте влезли в системата' });
 };
 
 // Define all routes BEFORE calling listen
@@ -264,11 +282,15 @@ app.post('/api/login', async (req, res) => {
       if (!result.user.approved && result.user.role !== 'admin') {
         return res.status(403).json({ error: 'Акаунтът ви все още не е одобрен от администратор.' });
       }
-      req.session.userId = result.user._id.toString();
-      res.json({ 
-        success: true, 
+      const userId = result.user._id.toString();
+      req.session.userId = userId;
+      // Also issue a JWT so Safari ITP users can authenticate via Authorization header
+      const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
+      res.json({
+        success: true,
+        token,
         user: {
-          id: result.user._id.toString(),
+          id: userId,
           email: result.user.email,
           username: result.user.username,
           role: result.user.role,

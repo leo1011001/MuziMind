@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
 import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaClock, FaSun, FaMoon, FaCloudMoon, FaCloudSun, FaArrowUp } from 'react-icons/fa';
 import './MusicComponents.css';
@@ -50,9 +51,7 @@ export const MusicPrediction: React.FC = () => {
   const fetchPrediction = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`, {
-        credentials: 'include'
-      });
+      const res = await authFetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`);
       if (res.ok) {
         const json = await res.json();
         setPrediction(json);

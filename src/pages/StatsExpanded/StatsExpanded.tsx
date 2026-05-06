@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { FaChartBar, FaMusic, FaTrophy, FaFire, FaArrowLeft, FaHeadphones } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './Stats.css';
@@ -17,7 +18,7 @@ export const StatsPage: React.FC = () => {
     
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/stats`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/stats`);
         if (res.ok) {
           const data = await res.json();
           setStats(data);

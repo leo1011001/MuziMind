@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { FaCalendarAlt, FaMusic, FaHistory } from 'react-icons/fa';
 import './MusicComponents.css';
 
@@ -29,9 +30,7 @@ export const UserListeningHistory: React.FC = () => {
   const fetchListeningHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/stats`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/stats`);
 
       if (response.ok) {
         const data = await response.json();

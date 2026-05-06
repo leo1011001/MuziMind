@@ -670,6 +670,8 @@ a {
   align-items: center;
   padding: var(--space-sm) var(--space-lg);
   background: var(--glass-bg);
+
+  -webkit-backdrop-filter: blur(var(--blur-amount));
   backdrop-filter: blur(var(--blur-amount));
   border-bottom: 1px solid var(--glass-border);
   z-index: 1000;
@@ -754,6 +756,8 @@ a {
   background:
     radial-gradient(350px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.055), transparent 40%),
     rgba(25, 20, 40, 0.25);
+
+  -webkit-backdrop-filter: blur(var(--blur-amount));
   backdrop-filter: blur(var(--blur-amount));
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
@@ -843,6 +847,8 @@ a {
   color: var(--text-primary);
   font-size: 1rem;
   transition: var(--transition-smooth);
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -863,6 +869,8 @@ a {
   font-size: 1rem;
   cursor: pointer;
   transition: var(--transition-smooth);
+
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;

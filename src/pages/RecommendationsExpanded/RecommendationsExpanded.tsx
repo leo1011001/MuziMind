@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '../../utils/authFetch';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FaHatWizard, FaFire, FaBolt, FaHeadphones, FaMicrophone, FaMusic, FaClock, FaChartBar, FaSun, FaCloudSun, FaCloudMoon, FaMoon, FaNewspaper, FaArrowUp } from 'react-icons/fa';
@@ -45,8 +46,8 @@ export const RecommendationsExpanded: React.FC = () => {
       try {
         // Fetch prediction and live top artists in parallel
         const [predResult, topArtistsResult] = await Promise.allSettled([
-          fetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-          fetch(`${API_URL}/api/top-artists?period=7day`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+          authFetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`).then(r => r.ok ? r.json() : null),
+          authFetch(`${API_URL}/api/top-artists?period=7day`).then(r => r.ok ? r.json() : null),
         ]);
 
         const predData = predResult.status === 'fulfilled' ? predResult.value : null;
@@ -64,9 +65,8 @@ export const RecommendationsExpanded: React.FC = () => {
 
         if (artistNames.length > 0) {
           try {
-            const spotlightRes = await fetch(
-              `${API_URL}/api/artist-spotlight?artists=${encodeURIComponent(artistNames.join(','))}`,
-              { credentials: 'include' }
+            const spotlightRes = await authFetch(
+              `${API_URL}/api/artist-spotlight?artists=${encodeURIComponent(artistNames.join(','))}`
             );
             if (spotlightRes.ok) {
               setSpotlight(await spotlightRes.json());

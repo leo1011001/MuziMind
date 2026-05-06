@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { RecentScrobbles } from '../../components/music/RecentScrobbles';
 import { DailyReading } from '../../components/reading/DailyReading';
 import { QuickStats } from '../../components/stats/QuickStats';
@@ -127,7 +128,7 @@ export const Home: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/stats`, { credentials: 'include' });
+      const response = await authFetch(`${API_URL}/api/stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -168,9 +169,8 @@ export const Home: React.FC = () => {
     setConnecting(true);
     setConnectMsg(null);
     try {
-      const res = await fetch(`${API_URL}/api/profile/lastfm`, {
+      const res = await authFetch(`${API_URL}/api/profile/lastfm`, {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lastfmUsername: lastfmInput.trim() }),
       });

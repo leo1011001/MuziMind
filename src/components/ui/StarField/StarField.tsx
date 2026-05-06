@@ -58,6 +58,7 @@ export default function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const animRef = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
   const [isLightMode, setIsLightMode] = useState(() => {
     return document.documentElement.getAttribute('data-theme') === 'light';
   });
@@ -83,41 +84,63 @@ export default function StarField() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Use screen dimensions as the backing buffer size so iOS toolbar
+    // show/hide (which changes window.innerHeight) never triggers a
+    // star rebuild and never causes a visual "jump" during scroll.
     let w = window.innerWidth;
-    let h = window.innerHeight;
+    // screen.height is the physical screen — doesn't change with toolbar.
+    const screenH = (window.screen?.height ?? window.innerHeight) * (window.devicePixelRatio || 1);
+    // Use the larger of the two so all scroll positions are covered.
+    let h = Math.max(window.innerHeight, screenH / (window.devicePixelRatio || 1));
+
     canvas.width = w;
     canvas.height = h;
 
-    const count = Math.floor((w * h) / 8000);
+    // Fewer stars on mobile — keeps GPU pressure low on phones.
+    const isMobile = w < 768;
+    const density = isMobile ? 14000 : 8000;
+    const count = Math.floor((w * h) / density);
     starsRef.current = makeStars(count, w, h, isLightMode);
 
     const handleResize = () => {
-      w = window.innerWidth;
-      h = window.innerHeight;
+      const newW = window.innerWidth;
+      // Only rebuild when the width actually changes — height changes are just
+      // the iOS Safari toolbar appearing/disappearing during scroll; ignore them.
+      if (Math.abs(newW - w) < 2) return;
+      w = newW;
+      h = Math.max(window.innerHeight, (window.screen?.height ?? window.innerHeight));
       canvas.width = w;
       canvas.height = h;
-      starsRef.current = makeStars(Math.floor((w * h) / 8000), w, h, isLightMode);
+      starsRef.current = makeStars(Math.floor((w * h) / density), w, h, isLightMode);
     };
     window.addEventListener('resize', handleResize);
 
-    const draw = () => {
+    // Delta-time animation: multiply every per-frame movement by elapsed
+    // milliseconds so stars drift at a constant real-world speed regardless
+    // of how many times per second rAF fires (important on iOS during scroll).
+    const TARGET_MS = 1000 / 60; // target one 60fps frame
+
+    const draw = (timestamp: number) => {
+      const delta = lastTimeRef.current ? Math.min((timestamp - lastTimeRef.current) / TARGET_MS, 3) : 1;
+      lastTimeRef.current = timestamp;
+
       ctx.clearRect(0, 0, w, h);
 
       for (const star of starsRef.current) {
-        // Breathing: opacity pulses between baseOpacity ± 0.35
-        star.opacity += star.opacityDir * star.opacitySpeed;
+        // Breathing opacity — scaled to delta so it's time-consistent
+        star.opacity += star.opacityDir * star.opacitySpeed * delta;
         if (star.opacity >= star.baseOpacity + 0.35 || star.opacity <= star.baseOpacity - 0.35) {
           star.opacityDir *= -1;
         }
         star.opacity = Math.max(0, Math.min(1, star.opacity));
 
-        // Breathing scale: inner→outer glow grows and shrinks
-        star.scalePhase += star.scaleSpeed;
+        // Breathing scale
+        star.scalePhase += star.scaleSpeed * delta;
         const breathScale = 1 + 0.5 * Math.abs(Math.sin(star.scalePhase));
 
-        // Slow float drift
-        star.x += star.vx;
-        star.y += star.vy;
+        // Drift — delta-time keeps speed identical at 30fps or 120fps
+        star.x += star.vx * delta;
+        star.y += star.vy * delta;
         if (star.x < -10) star.x = w + 10;
         if (star.x > w + 10) star.x = -10;
         if (star.y < -10) star.y = h + 10;
@@ -143,7 +166,7 @@ export default function StarField() {
       animRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    animRef.current = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(animRef.current);
@@ -162,6 +185,11 @@ export default function StarField() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
+        // Force GPU compositing layer so the canvas isn't repainted during
+        // momentum scroll on iOS — prevents the "stars flying" visual.
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)',
+        willChange: 'transform',
       }}
     />
   );

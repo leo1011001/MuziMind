@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { FaMusic, FaClock, FaExternalLinkAlt } from 'react-icons/fa';
 import './MusicComponents.css';
 
@@ -38,7 +39,7 @@ export const NowPlaying: React.FC = () => {
   const fetchNowPlaying = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/now-playing', { credentials: 'include' });
+      const res = await authFetch('/api/now-playing');
       if (res.ok) {
         setData(await res.json());
       }

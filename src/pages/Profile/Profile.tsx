@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { authFetch } from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaSave, FaArrowLeft, FaLastfm, FaCalendarAlt, FaMusic, FaCrown, FaHeadphones, FaCheckCircle, FaTimesCircle, FaEdit, FaShieldAlt, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import './Profile.css';
@@ -55,7 +56,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/profile`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/profile`);
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
@@ -76,9 +77,8 @@ export default function Profile() {
     if (newPassword.length < 6) { setPwMessage('short'); return; }
     setPwSaving(true); setPwMessage('');
     try {
-      const res = await fetch(`${API_URL}/api/auth/change-password`, {
+      const res = await authFetch(`${API_URL}/api/auth/change-password`, {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
@@ -98,9 +98,8 @@ export default function Profile() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(`${API_URL}/api/profile`, {
+      const res = await authFetch(`${API_URL}/api/profile`, {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bio, pronouns, nationality, gender })
       });
