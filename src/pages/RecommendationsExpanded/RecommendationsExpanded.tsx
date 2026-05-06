@@ -45,7 +45,7 @@ export const RecommendationsExpanded: React.FC = () => {
       try {
         // Fetch prediction and live top artists in parallel
         const [predResult, topArtistsResult] = await Promise.allSettled([
-          fetch(`${API_URL}/api/predict`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+          fetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
           fetch(`${API_URL}/api/top-artists?period=7day`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
         ]);
 

@@ -1244,8 +1244,13 @@ app.get('/api/predict', requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+    // Accept client's local hour so time-of-day context is correct regardless of server timezone
+    const localHour = req.query.localHour !== undefined
+      ? parseInt(req.query.localHour as string, 10)
+      : new Date().getHours();
+
     // @ts-ignore - syncService gets a dynamic method
-    const prediction = await (syncService as any).predictForUser(userId);
+    const prediction = await (syncService as any).predictForUser(userId, localHour);
 
     // Override recommendedArtists with live Last.fm 7-day top artists so the
     // carousel always reflects current listening, not potentially stale DB data.

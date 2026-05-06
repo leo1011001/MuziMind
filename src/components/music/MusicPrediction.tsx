@@ -50,7 +50,7 @@ export const MusicPrediction: React.FC = () => {
   const fetchPrediction = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/api/predict`, {
+      const res = await fetch(`${API_URL}/api/predict?localHour=${new Date().getHours()}`, {
         credentials: 'include'
       });
       if (res.ok) {

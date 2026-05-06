@@ -392,7 +392,7 @@ function timeBucket(hour: number): number {
 }
 
 // Enhanced prediction method with weighted scoring
-(syncService as any).predictForUser = async function(userId: string) {
+(syncService as any).predictForUser = async function(userId: string, clientHour?: number) {
   const stats = await this.getUserListeningData(userId);
 
   // Pull raw scrobbles from DB (up to 7 days) for per-artist scoring
@@ -430,7 +430,7 @@ function timeBucket(hour: number): number {
 
   // ── Per-artist scoring ──────────────────────────────────────────────────
   // Score = Σ recencyWeight(t) per play  +  time-of-day affinity bonus  +  velocity bonus
-  const currentBucket = timeBucket(new Date().getHours());
+  const currentBucket = timeBucket(clientHour ?? new Date().getHours());
   const midpoint = new Date(nowMs - 3.5 * 86_400_000); // split 7-day window in half
 
   interface ArtistScore {
@@ -501,8 +501,10 @@ function timeBucket(hour: number): number {
   // Get top 3 genres for deeper recommendations
   const topThreeGenres = stats.topTags?.slice(0, 3) || [topGenre];
   
-  // Generate personalized predictions based on time of day
-  const currentHour = new Date().getHours();
+  // Use client's local hour if provided (server runs UTC, users may be in different TZ)
+  const currentHour = (clientHour !== undefined && clientHour >= 0 && clientHour <= 23)
+    ? clientHour
+    : new Date().getHours();
   const currentDay = new Date().toLocaleDateString('bg-BG', { weekday: 'long' });
   
   let timeContext = '';
