@@ -45,6 +45,8 @@ const moodLabels: Record<string, string> = {
   mysterious: 'Мистериозен', creative: 'Творчески', balanced: 'Балансиран',
 };
 
+const READING_CACHE_KEY = 'mz_last_reading';
+
 export function DailyReading({ userId }: DailyReadingProps) {
   const [reading, setReading] = useState<ReadingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,9 +91,23 @@ export function DailyReading({ userId }: DailyReadingProps) {
   };
 
   const fetchReading = async () => {
+    setError(null);
+
+    // Immediately show the last cached reading so the UI is never blank on load.
+    // This gives instant feedback even on slow server cold-starts.
+    const cached = sessionStorage.getItem(READING_CACHE_KEY);
+    if (cached) {
+      try {
+        const cachedData: ReadingData = JSON.parse(cached);
+        setReading(cachedData);
+        setLoading(false); // already have content — no spinner needed
+      } catch { /* corrupt cache, ignore */ }
+    }
+
     try {
-      setLoading(true);
-      setError(null);
+      // If nothing was cached, keep the loading spinner; otherwise fetch silently.
+      if (!cached) setLoading(true);
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       const res = await fetch(`${API_URL}/api/reading/latest`, { credentials: 'include' });
       if (res.status === 404) {
@@ -101,7 +117,11 @@ export function DailyReading({ userId }: DailyReadingProps) {
         return;
       }
       if (!res.ok) throw new Error('Грешка при зареждане');
-      const data = await res.json();
+      const data: ReadingData = await res.json();
+
+      // Update the cache with the freshly fetched reading
+      sessionStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
+
       // Auto-regenerate if the stored reading is from a previous day
       const readingDate = new Date(data.date);
       const today = new Date();
@@ -116,7 +136,8 @@ export function DailyReading({ userId }: DailyReadingProps) {
       }
       setReading(data);
     } catch (err) {
-      setError('Грешка при зареждане на прочита');
+      // If we already have a cached reading on-screen, don't replace it with an error banner.
+      if (!cached) setError('Грешка при зареждане на прочита');
       console.error('Error fetching reading:', err);
     } finally {
       setLoading(false);
@@ -136,6 +157,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
       });
       if (!res.ok) throw new Error('Грешка при генериране');
       const data = await res.json();
+      sessionStorage.setItem(READING_CACHE_KEY, JSON.stringify(data));
       setReading(data);
     } catch (err) {
       setError('Грешка при генериране на прочит');

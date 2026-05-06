@@ -48,16 +48,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (resp.ok) {
           const userData = await resp.json();
           setUser(userData as User);
-          // Cache for mobile Safari which blocks cross-site cookies
+          // Cache for quick subsequent loads
           sessionStorage.setItem('mz_user', JSON.stringify(userData));
         } else {
-          // Cookie rejected (mobile Safari ITP) — fall back to sessionStorage cache
-          const cached = sessionStorage.getItem('mz_user');
-          if (cached) setUser(JSON.parse(cached) as User);
+          // Server says not authenticated (e.g. 401) — the session is gone.
+          // Clear any stale sessionStorage so the user sees the login page rather
+          // than a broken "logged-in" UI where every API call returns 401.
+          sessionStorage.removeItem('mz_user');
+          setUser(null);
         }
       } catch {
+        // Network error (offline, DNS failure, etc.) — use the cached user optimistically
+        // so the app still renders. API calls will fail but at least the UI shows something.
         const cached = sessionStorage.getItem('mz_user');
-        if (cached) setUser(JSON.parse(cached) as User);
+        if (cached) {
+          try { setUser(JSON.parse(cached) as User); } catch { /* ignore */ }
+        }
       } finally {
         setLoading(false);
       }
@@ -126,9 +132,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const syncWithLastFM = async (_lastfmUsername?: string) => {
+    // Do NOT touch the global `loading` flag — this runs in the background and
+    // should not trigger a full-page loading state or block the UI.
     try {
-      setLoading(true);
-      // lastfmUsername can be passed for explicit syncing
       const response = await fetch(`${API_URL}/api/sync/lastfm`, {
         method: 'POST',
         credentials: 'include',
@@ -141,8 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      return { 
-        success: true, 
+      return {
+        success: true,
         newScrobbles: data.newScrobbles || 0,
         syncedTracks: data.syncedTracks || 0,
         nowPlaying: data.nowPlaying
@@ -150,20 +156,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Last.fm sync error:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const logout = async () => {
-    try {
-      await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
-    } catch (e) {
-      console.error('Logout error:', e);
-    } finally {
-      setUser(null);
-      sessionStorage.removeItem('mz_user');
-    }
+    // Clear state immediately so the UI transitions to the login page at once.
+    // Fire the server-side session destruction in the background — no need to await it.
+    setUser(null);
+    sessionStorage.removeItem('mz_user');
+    fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
   };
 
   const value: AuthContextType = {
