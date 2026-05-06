@@ -89,17 +89,27 @@ export class LastFMService {
     
     try {
       const response = await fetch(`${BASE_URL}?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Last.fm API error: ${response.statusText}`);
+
+      // Parse body first so we can check Last.fm error codes regardless of HTTP status
+      const data: any = await response.json().catch(() => null);
+
+      if (!response.ok || (data?.error)) {
+        // Last.fm error code 6 = User not found, 17 = User suspended/private
+        if (response.status === 404 || data?.error === 6 || data?.error === 17) {
+          const err: any = new Error(`Last.fm user not found: ${username}`);
+          err.lastfmUserNotFound = true;
+          throw err;
+        }
+        throw new Error(`Last.fm API error: ${data?.message || response.statusText}`);
       }
-      
-      const data: LastFMResponse = await response.json();
-      return Array.isArray(data.recenttracks.track) 
-        ? data.recenttracks.track 
+
+      return Array.isArray(data.recenttracks.track)
+        ? data.recenttracks.track
         : [data.recenttracks.track];
     } catch (error) {
-      console.error('Error fetching Last.fm tracks:', error);
+      if (!(error as any).lastfmUserNotFound) {
+        console.error('Error fetching Last.fm tracks:', error);
+      }
       throw error;
     }
   }

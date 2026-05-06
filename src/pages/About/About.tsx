@@ -46,7 +46,7 @@ export const AboutPage: React.FC = () => {
 
         <div className="about-section">
           <h2><FaHeart /> Подкрепи ни</h2>
-          <p>Ако харесваш MuziMind, следи за нови функции и по-нататън развой!</p>
+          <p>Ако харесваш MuziMind, следи за нови функционалности и развития в платформата!</p>
         </div>
       </div>
     </div>

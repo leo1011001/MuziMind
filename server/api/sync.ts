@@ -108,6 +108,11 @@ export class DataSyncService {
         nowPlaying: nowPlayingData
       };
     } catch (error: any) {
+      if (error?.lastfmUserNotFound) {
+        // Username doesn't exist / is private on Last.fm — log once as warning, not error
+        console.warn(`⚠️ Last.fm sync skipped for "${lastfmUsername}": user not found or profile is private.`);
+        return { success: false, newScrobbles: 0, error: 'Last.fm user not found' };
+      }
       console.error('Sync error:', error);
       return {
         success: false,
