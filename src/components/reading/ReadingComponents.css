@@ -133,12 +133,19 @@
 
 .recommendation-info {
   flex: 1;
+  /* min-width: 0 is required so flex children can shrink below their content
+     width — without this, long text overflows the card on mobile */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .recommendation-track {
   font-size: 1rem;
   margin-bottom: 0.25rem;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .recommendation-track strong {
