@@ -63,7 +63,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [insight, setInsight] = useState<string | null>(null);
-  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightLoading, setInsightLoading] = useState(true);
 
   useEffect(() => {
     if (userId) {

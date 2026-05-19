@@ -833,7 +833,7 @@ app.get('/api/reading/insight', requireAuth, async (req, res) => {
     // Get top artists from our own DB — no Last.fm API call needed here
     const artistDocs = await db.artistStats
       .find({ userId: new ObjectId(userId) })
-      .sort({ playcount: -1 })
+      .sort({ playCount: -1 })
       .limit(5)
       .toArray();
 
