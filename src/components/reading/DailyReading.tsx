@@ -63,7 +63,7 @@ export function DailyReading({ userId }: DailyReadingProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [insight, setInsight] = useState<string | null>(null);
-  const [insightLoading, setInsightLoading] = useState(true);
+  const [insightLoading, setInsightLoading] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -80,7 +80,8 @@ export function DailyReading({ userId }: DailyReadingProps) {
       // Cache insight per calendar day so it doesn't regenerate on every mount
       const cacheKey = `mz_insight_${new Date().toDateString()}`;
       const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
+      // Only use cache if it has real content (not empty from a previous failed call)
+      if (cached && cached.trim().length > 10) {
         setInsight(cached);
         setInsightLoading(false);
         return;
