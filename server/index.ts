@@ -831,13 +831,18 @@ app.get('/api/reading/insight', requireAuth, async (req, res) => {
     }
 
     // Get top artists from our own DB — no Last.fm API call needed here
-    const artistDocs = await db.artistStats
-      .find({ userId: new ObjectId(userId) })
-      .sort({ playCount: -1 })
-      .limit(5)
-      .toArray();
+    let artistDocs: any[] = [];
+    try {
+      artistDocs = await db.artistStats
+        .find({ userId: new ObjectId(userId) })
+        .sort({ playCount: -1 })
+        .limit(5)
+        .toArray();
+    } catch (e) {
+      console.warn('Insight: could not query artistStats:', e);
+    }
 
-    const topArtists = artistDocs.map((a: any) => a.artist).join(', ');
+    const topArtists = artistDocs.map((a: any) => a.artist).filter(Boolean).join(', ');
 
     const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',

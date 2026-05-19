@@ -840,8 +840,11 @@ a {
 
 .page-container {
   padding: calc(var(--space-xl) + 4rem) var(--space-lg) var(--space-xl);
-  max-width: 1400px;
-  margin: 0 auto;
+  width: min(1400px, 100%);
+  /* Force geometric center — independent of scrollbar/BFC quirks */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .content-grid {

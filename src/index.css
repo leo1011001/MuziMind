@@ -30,15 +30,10 @@ button {
 /* Ensure smooth scrolling */
 html {
   scroll-behavior: smooth;
-  /* overflow-x: clip blocks horizontal scroll without creating a new Block
-     Formatting Context — unlike `hidden`, it does NOT break margin:auto
-     centering when a vertical scrollbar is present. Must be on html for
-     Safari momentum-scroll containment. */
+  /* overflow-x: clip blocks horizontal scroll without creating a new BFC —
+     unlike `hidden` it does not interfere with margin:auto centering. */
   overflow-x: clip;
   -webkit-overflow-scrolling: touch;
-  /* Reserve scrollbar gutter so centered containers don't shift when the
-     page becomes tall enough to show a vertical scrollbar. */
-  scrollbar-gutter: stable;
 }
 
 /* Ensure nothing bleeds past the viewport on any device */

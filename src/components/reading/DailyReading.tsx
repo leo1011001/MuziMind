@@ -82,19 +82,30 @@ export function DailyReading({ userId }: DailyReadingProps) {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         setInsight(cached);
+        setInsightLoading(false);
         return;
       }
 
-      const res = await authFetch(`${API_URL}/api/reading/insight`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.insight) {
-          setInsight(data.insight);
-          sessionStorage.setItem(cacheKey, data.insight);
+      // 10s timeout — Groq is fast; if it takes longer something is wrong
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+
+      try {
+        const res = await authFetch(`${API_URL}/api/reading/insight`, { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.insight) {
+            setInsight(data.insight);
+            sessionStorage.setItem(cacheKey, data.insight);
+          }
+        } else {
+          console.warn('Insight fetch failed:', res.status);
         }
+      } catch (err: any) {
+        clearTimeout(timer);
+        if (err?.name !== 'AbortError') console.warn('Insight error:', err);
       }
-    } catch {
-      // silently fail — insight is optional
     } finally {
       setInsightLoading(false);
     }
