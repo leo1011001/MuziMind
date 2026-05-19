@@ -67,7 +67,7 @@ export class LastFMService {
   }
   
   async getRecentTracks(
-    username: string, 
+    username: string,
     limit: number = 50,
     page: number = 1,
     from?: number,
@@ -82,36 +82,56 @@ export class LastFMService {
       page: page.toString(),
       extended: '1'  // Get extended data including album images
     });
-    
+
     // Add time range if provided (unix timestamps)
     if (from) params.append('from', from.toString());
     if (to) params.append('to', to.toString());
-    
-    try {
-      const response = await fetch(`${BASE_URL}?${params}`);
 
-      // Parse body first so we can check Last.fm error codes regardless of HTTP status
-      const data: any = await response.json().catch(() => null);
+    const MAX_RETRIES = 3;
+    let lastError: unknown;
 
-      if (!response.ok || (data?.error)) {
-        // Last.fm error code 6 = User not found, 17 = User suspended/private
-        if (response.status === 404 || data?.error === 6 || data?.error === 17) {
-          const err: any = new Error(`Last.fm user not found: ${username}`);
-          err.lastfmUserNotFound = true;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(`${BASE_URL}?${params}`);
+
+        // Parse body first so we can check Last.fm error codes regardless of HTTP status
+        const data: any = await response.json().catch(() => null);
+
+        if (!response.ok || (data?.error)) {
+          // Last.fm error code 6 = User not found, 17 = User suspended/private
+          if (response.status === 404 || data?.error === 6 || data?.error === 17) {
+            const err: any = new Error(`Last.fm user not found: ${username}`);
+            err.lastfmUserNotFound = true;
+            throw err;
+          }
+          // Transient error — worth retrying
+          const err = new Error(`Last.fm API error: ${data?.message || response.statusText}`);
+          if (attempt < MAX_RETRIES) {
+            const delay = attempt * 1500; // 1.5s, 3s
+            console.warn(`Last.fm transient error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            lastError = err;
+            continue;
+          }
           throw err;
         }
-        throw new Error(`Last.fm API error: ${data?.message || response.statusText}`);
-      }
 
-      return Array.isArray(data.recenttracks.track)
-        ? data.recenttracks.track
-        : [data.recenttracks.track];
-    } catch (error) {
-      if (!(error as any).lastfmUserNotFound) {
-        console.error('Error fetching Last.fm tracks:', error);
+        return Array.isArray(data.recenttracks.track)
+          ? data.recenttracks.track
+          : [data.recenttracks.track];
+      } catch (error) {
+        if ((error as any).lastfmUserNotFound) throw error; // never retry user-not-found
+        lastError = error;
+        if (attempt < MAX_RETRIES) {
+          const delay = attempt * 1500;
+          console.warn(`Last.fm fetch error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
       }
-      throw error;
     }
+
+    console.error('Error fetching Last.fm tracks after retries:', lastError);
+    throw lastError;
   }
 
   // Get tracks from the last N days

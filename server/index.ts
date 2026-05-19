@@ -830,15 +830,14 @@ app.get('/api/reading/insight', requireAuth, async (req, res) => {
       return res.status(503).json({ error: 'AI not configured' });
     }
 
-    // Get quick stats
-    const [topArtistsResp, topTagsResp] = await Promise.allSettled([
-      lastFMService.getTopArtists(user.lastfmUsername, '1month', 5),
-      lastFMService.getTopTags(user.lastfmUsername, 5)
-    ]);
+    // Get top artists from our own DB — no Last.fm API call needed here
+    const artistDocs = await db.artistStats
+      .find({ userId: new ObjectId(userId) })
+      .sort({ playcount: -1 })
+      .limit(5)
+      .toArray();
 
-    const topArtists = (topArtistsResp.status === 'fulfilled'
-      ? topArtistsResp.value?.topartists?.artist || []
-      : []).slice(0, 5).map((a: any) => a.name).join(', ');
+    const topArtists = artistDocs.map((a: any) => a.artist).join(', ');
 
     const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
