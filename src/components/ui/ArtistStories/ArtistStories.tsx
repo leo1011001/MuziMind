@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaGlobe, FaHeadphones, FaMusic } from 'react-icons/fa';
 import './ArtistStories.css';
 
@@ -188,7 +189,9 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
   const bioPreview = artist.bio.slice(0, 220);
   const hasBio = artist.bio.length > 0;
 
-  return (
+  // Render into document.body so position:fixed is always viewport-relative,
+  // even when an ancestor element has transform (glass-card, glass-nav, etc.)
+  return createPortal(
     <div className="stories-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="stories-card">
         {/* Background image */}
@@ -341,7 +344,8 @@ export const ArtistStories: React.FC<ArtistStoriesProps> = ({ artists, startInde
         {artist.aiGeneratedAt && <div className="stories-ai-badge">🤖 AI</div>}
         {paused && <div className="stories-paused-badge">⏸</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
