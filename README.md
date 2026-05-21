@@ -32,7 +32,7 @@
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 19 + TypeScript + Vite |
 | Backend | Node.js + Express + TypeScript |
 | Database | MongoDB Atlas |
 | AI | Groq API (Llama 3.3 70B) |
