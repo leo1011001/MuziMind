@@ -181,6 +181,12 @@
   border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
+.role-badge.moderator {
+  background: rgba(20, 184, 166, 0.18);
+  color: #2dd4bf;
+  border: 1px solid rgba(20, 184, 166, 0.35);
+}
+
 .role-badge.user {
   background: rgba(99, 102, 241, 0.15);
   color: rgba(255, 255, 255, 0.6);

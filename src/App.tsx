@@ -9,6 +9,7 @@ import { StatsPage } from "./pages/StatsExpanded/StatsExpanded.tsx"
 import { RecommendationsExpanded } from "./pages/RecommendationsExpanded/RecommendationsExpanded.tsx"
 import { AboutPage } from "./pages/About/About.tsx"
 import Admin from "./pages/Admin/Admin.tsx"
+import Moderator from "./pages/Moderator/Moderator.tsx"
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail.tsx"
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword.tsx"
 import ResetPassword from "./pages/ResetPassword/ResetPassword.tsx"
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/moderator" element={<Moderator />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Navigate to="/login?tab=register" replace />} />
             <Route path="/verify-email" element={<VerifyEmail />} />

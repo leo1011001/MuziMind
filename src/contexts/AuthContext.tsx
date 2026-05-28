@@ -8,7 +8,7 @@ interface User {
   username: string;
   email: string;
   lastfmUsername?: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'moderator' | 'admin';
   preferences: {
     language: 'bg' | 'en';
     theme: 'light' | 'dark';

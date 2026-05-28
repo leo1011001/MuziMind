@@ -20,7 +20,7 @@ export interface User {
   email: string;
   username: string;
   passwordHash: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'moderator' | 'admin';
   approved?: boolean;
   // Email verification
   emailVerified?: boolean;
@@ -36,6 +36,9 @@ export interface User {
   preferences: UserPreferences;
   createdAt: Date;
   lastLogin?: Date;
+  suspended?: boolean;
+  suspendedReason?: string;
+  modNotes?: string;
   stats?: {
     totalScrobbles: number;
     totalArtists: number;

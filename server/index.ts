@@ -176,6 +176,21 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'muzi
 // Auth middleware - DEFINE THIS BEFORE ROUTES
 // Accepts either a session cookie (desktop browsers) OR a Bearer JWT token
 // (Safari on iOS where ITP blocks cross-site session cookies).
+// requireMod: allows admin OR moderator
+const requireMod = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: 'Не сте влезли в системата' });
+  try {
+    const actor = await db.findUserById(userId);
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'moderator')) {
+      return res.status(403).json({ error: 'Нямате права за тази операция' });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+};
+
 const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // 1. Session cookie — works on Chrome/Firefox and desktop Safari
   if (req.session.userId) return next();
@@ -271,7 +286,7 @@ app.post('/api/login', async (req, res) => {
     
     if (result.success && result.user && result.user._id) {
       // Block unverified users (admin bypasses)
-      if (!result.user.emailVerified && result.user.role !== 'admin') {
+      if (!result.user.emailVerified && result.user.role !== 'admin' && result.user.role !== 'moderator') {
         return res.status(403).json({
           error: 'Имейлът ти не е верифициран. Провери пощата си за верификационен код.',
           code: 'EMAIL_NOT_VERIFIED',
@@ -279,8 +294,18 @@ app.post('/api/login', async (req, res) => {
         });
       }
       // Block unapproved non-admin users (legacy / manual block)
-      if (!result.user.approved && result.user.role !== 'admin') {
+      if (!result.user.approved && result.user.role !== 'admin' && result.user.role !== 'moderator') {
         return res.status(403).json({ error: 'Акаунтът ви все още не е одобрен от администратор.' });
+      }
+      // Block suspended users
+      if ((result.user as any).suspended) {
+        const reason = (result.user as any).suspendedReason;
+        return res.status(403).json({
+          error: reason
+            ? `Акаунтът ви е спрян: ${reason}`
+            : 'Акаунтът ви е временно спрян. Свържете се с администратор.',
+          code: 'ACCOUNT_SUSPENDED',
+        });
       }
       const userId = result.user._id.toString();
       req.session.userId = userId;
@@ -703,7 +728,7 @@ app.put('/api/admin/users/:id', requireAuth, async (req, res) => {
     }
     const { role, approved, verified, verificationStatus, username, email, lastfmUsername } = req.body;
     const updates: Record<string, any> = {};
-    if (role === 'user' || role === 'admin') updates.role = role;
+    if (role === 'user' || role === 'moderator' || role === 'admin') updates.role = role;
     if (typeof approved === 'boolean') updates.approved = approved;
     if (typeof verified === 'boolean') updates.verified = verified;
     if (verificationStatus === 'approved' || verificationStatus === 'rejected' || verificationStatus === 'pending' || verificationStatus === 'none') {
@@ -747,6 +772,69 @@ app.delete('/api/admin/users/:id', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
   }
 });
+
+// ── Moderator endpoints ──────────────────────────────────────────────────────
+
+// Mod: list all users (read-only — no passwordHash)
+app.get('/api/mod/users', requireAuth, requireMod, async (req, res) => {
+  try {
+    const users = await db.users
+      .find({})
+      .project({ passwordHash: 0, emailVerificationCode: 0, passwordResetToken: 0 })
+      .toArray();
+    res.json(users);
+  } catch (error) {
+    console.error('Mod list users error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// Mod: limited update — approve, verificationStatus, suspend, modNotes only
+app.put('/api/mod/users/:id', requireAuth, requireMod, async (req, res) => {
+  try {
+    const actorId = req.session.userId!;
+    const actor = await db.findUserById(actorId);
+    const targetId = String(req.params.id);
+
+    if (targetId === actorId) {
+      return res.status(400).json({ error: 'Не можете да модерирате собствения си акаунт' });
+    }
+
+    const target = await db.findUserById(targetId);
+    if (!target) return res.status(404).json({ error: 'Потребителят не е намерен' });
+
+    // Moderators cannot touch admins or other moderators
+    if (target.role === 'admin' || (target.role === 'moderator' && actor?.role !== 'admin')) {
+      return res.status(403).json({ error: 'Нямате права да модерирате този потребител' });
+    }
+
+    const { approved, verificationStatus, suspended, suspendedReason, modNotes } = req.body;
+    const updates: Record<string, any> = {};
+
+    if (typeof approved === 'boolean') updates.approved = approved;
+    if (verificationStatus === 'approved' || verificationStatus === 'rejected' || verificationStatus === 'pending' || verificationStatus === 'none') {
+      updates.verificationStatus = verificationStatus;
+    }
+    if (typeof suspended === 'boolean') {
+      updates.suspended = suspended;
+      if (!suspended) updates.suspendedReason = '';
+    }
+    if (typeof suspendedReason === 'string') updates.suspendedReason = suspendedReason.trim();
+    if (typeof modNotes === 'string') updates.modNotes = modNotes.trim();
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Няма промени за прилагане' });
+    }
+
+    await db.updateUser(targetId, updates as any);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mod update user error:', error);
+    res.status(500).json({ error: 'Вътрешна грешка на сървъра' });
+  }
+});
+
+// ── End moderator endpoints ──────────────────────────────────────────────────
 
 // Update preferences
 app.put('/api/preferences', requireAuth, async (req, res) => {

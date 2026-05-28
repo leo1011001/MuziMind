@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { authFetch } from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
-import { FaShieldAlt, FaTrash, FaCheck, FaTimes, FaUserShield, FaUser, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaClock, FaUsers, FaEdit, FaUserClock, FaSave } from 'react-icons/fa';
+import { FaShieldAlt, FaTrash, FaCheck, FaTimes, FaUserShield, FaUser, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaClock, FaUsers, FaEdit, FaUserClock, FaSave, FaUserTie } from 'react-icons/fa';
 import './Admin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -116,10 +116,13 @@ const Admin: React.FC = () => {
   };
 
   const toggleRole = async (u: AdminUser) => {
-    const newRole = u.role === 'admin' ? 'user' : 'admin';
+    // Cycle: user → moderator → admin → user
+    const cycle: Record<string, string> = { user: 'moderator', moderator: 'admin', admin: 'user' };
+    const newRole = cycle[u.role] ?? 'user';
+    const labels: Record<string, string> = { user: 'потребител', moderator: 'модератор', admin: 'администратор' };
     const success = await updateUser(u._id, { role: newRole });
     if (success) {
-      showMessage(`${u.username} е вече ${newRole === 'admin' ? 'администратор' : 'потребител'}`, 'success');
+      showMessage(`${u.username} е вече ${labels[newRole]}`, 'success');
       fetchUsers();
     }
   };
@@ -232,7 +235,7 @@ const Admin: React.FC = () => {
                 {users.map((u) => (
                   <tr key={u._id}>
                     <td className="user-cell">
-                      {u.role === 'admin' ? <FaUserShield /> : <FaUser />}
+                      {u.role === 'admin' ? <FaUserShield /> : u.role === 'moderator' ? <FaUserTie /> : <FaUser />}
                       {u.username}
                     </td>
                     <td>{u.email}</td>
@@ -241,11 +244,11 @@ const Admin: React.FC = () => {
                       <button
                         className={`role-badge ${u.role}`}
                         onClick={() => toggleRole(u)}
-                        title={u._id === currentUser?.id ? 'Не можете да промените собствената си роля' : 'Натисни за смяна на роля'}
+                        title={u._id === currentUser?.id ? 'Не можете да промените собствената си роля' : 'Натисни за смяна на роля (потребител → модератор → админ)'}
                         disabled={u._id === currentUser?.id}
                         style={u._id === currentUser?.id ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                       >
-                        {u.role === 'admin' ? 'Админ' : 'Потребител'}
+                        {u.role === 'admin' ? 'Админ' : u.role === 'moderator' ? 'Модератор' : 'Потребител'}
                       </button>
                     </td>
                     <td>
@@ -440,6 +443,7 @@ const Admin: React.FC = () => {
                     onChange={(e) => setEditForm(f => ({ ...f, role: e.target.value }))}
                   >
                     <option value="user">Потребител</option>
+                    <option value="moderator">Модератор</option>
                     <option value="admin">Администратор</option>
                   </select>
                 </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic, FaUser, FaBars, FaTimes, FaShieldAlt, FaSun, FaMoon } from 'react-icons/fa';
+import { FaHome, FaChartBar, FaHandSparkles, FaInfoCircle, FaSignOutAlt, FaMusic, FaUser, FaBars, FaTimes, FaShieldAlt, FaUserShield, FaSun, FaMoon } from 'react-icons/fa';
 import '../UI.css';
 
 export const Navigation: React.FC = () => {
@@ -70,10 +70,20 @@ export const Navigation: React.FC = () => {
                 <FaUser /> Профил
               </Link>
 
-              {user.role === 'admin' && (
-                <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
-                  <FaShieldAlt /> Админ
+              {user.role === 'moderator' && (
+                <Link to="/moderator" className={`nav-link ${isActive('/moderator') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+                  <FaUserShield /> Модератор
                 </Link>
+              )}
+              {user.role === 'admin' && (
+                <>
+                  <Link to="/moderator" className={`nav-link ${isActive('/moderator') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+                    <FaUserShield /> Модератор
+                  </Link>
+                  <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+                    <FaShieldAlt /> Админ
+                  </Link>
+                </>
               )}
             </>
           )}

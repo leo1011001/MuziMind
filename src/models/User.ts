@@ -20,8 +20,11 @@ export interface User {
   email: string;
   username: string;
   passwordHash: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'moderator' | 'admin';
   approved?: boolean;
+  suspended?: boolean;
+  suspendedReason?: string;
+  modNotes?: string;
   // Email verification
   emailVerified?: boolean;
   emailVerificationCode?: string;
