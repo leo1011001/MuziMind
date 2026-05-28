@@ -301,7 +301,14 @@ const Moderator: React.FC = () => {
                     </td>
                     <td>
                       {u.suspended
-                        ? <span className="suspended-badge"><FaBan /> Спрян</span>
+                        ? (
+                          <span
+                            className="suspended-badge has-reason-tooltip"
+                            data-reason={u.suspendedReason || null}
+                          >
+                            <FaBan /> Спрян
+                          </span>
+                        )
                         : <span className="active-badge">Активен</span>}
                     </td>
                     <td className="date-cell">

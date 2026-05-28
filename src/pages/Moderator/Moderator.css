@@ -307,6 +307,61 @@
   font-size: 0.78rem;
   color: #4ade80;
 }
+
+/* ── Suspension reason tooltip ────────────────── */
+.has-reason-tooltip {
+  position: relative;
+  cursor: default;
+}
+
+/* Only show tooltip if data-reason is non-empty */
+.has-reason-tooltip[data-reason]:not([data-reason=""])::after {
+  content: attr(data-reason);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 8, 40, 0.96);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.4rem 0.75rem;
+  border-radius: 7px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Arrow */
+.has-reason-tooltip[data-reason]:not([data-reason=""])::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(239, 68, 68, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 101;
+}
+
+.has-reason-tooltip[data-reason]:not([data-reason=""]):hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.has-reason-tooltip[data-reason]:not([data-reason=""]):hover::before {
+  opacity: 1;
+}
 .suspended-tag {
   font-size: 0.65rem;
   font-weight: 700;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { authFetch } from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
-import { FaShieldAlt, FaTrash, FaCheck, FaTimes, FaUserShield, FaUser, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaClock, FaUsers, FaEdit, FaUserClock, FaSave, FaUserTie } from 'react-icons/fa';
+import { FaShieldAlt, FaTrash, FaCheck, FaTimes, FaUserShield, FaUser, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaClock, FaUsers, FaEdit, FaUserClock, FaSave, FaUserTie, FaBan } from 'react-icons/fa';
 import './Admin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -15,6 +15,8 @@ interface AdminUser {
   approved?: boolean;
   verified?: boolean;
   verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  suspended?: boolean;
+  suspendedReason?: string;
   lastfmUsername?: string;
   createdAt?: string;
 }
@@ -226,6 +228,7 @@ const Admin: React.FC = () => {
                   <th>Last.fm</th>
                   <th>Роля</th>
                   <th>Одобрен</th>
+                  <th>Статус</th>
                   <th>Верификация</th>
                   <th>Регистрация</th>
                   <th>Действия</th>
@@ -259,6 +262,18 @@ const Admin: React.FC = () => {
                       >
                         {u.approved ? <><FaCheckCircle /> Да</> : <><FaTimesCircle /> Не</>}
                       </button>
+                    </td>
+                    <td>
+                      {u.suspended
+                        ? (
+                          <span
+                            className="suspended-badge has-reason-tooltip"
+                            data-reason={u.suspendedReason || null}
+                          >
+                            <FaBan /> Спрян
+                          </span>
+                        )
+                        : <span className="active-badge">Активен</span>}
                     </td>
                     <td>
                       <span className={`verification-status ${u.approved ? 'approved' : 'rejected'}`}>
