@@ -159,6 +159,42 @@
   animation: shake 0.5s ease;
 }
 
+/* ===== Suspended Message ===== */
+
+.suspended-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  animation: slideInUp 0.4s ease;
+}
+
+.suspended-message-icon {
+  font-size: 2.5rem;
+  color: #f87171;
+  margin-bottom: 0.75rem;
+}
+
+.suspended-message h3 {
+  color: #f87171;
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.suspended-message p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.suspended-hint {
+  margin-top: 0.6rem !important;
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
 /* ===== Approval Denied Message ===== */
 
 .approval-denied-message {

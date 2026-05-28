@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaClock, FaExclamationCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaClock, FaExclamationCircle, FaBan } from 'react-icons/fa';
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -13,6 +13,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const navigate = useNavigate();
   const [error, setError] = useState<string>('');
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
+  const [isSuspended, setIsSuspended] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -21,6 +22,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSuspended(false);
 
     if (!formData.email || !formData.password) {
       setError('Моля, попълнете всички полета');
@@ -35,6 +37,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       // Server sends code:'EMAIL_NOT_VERIFIED' — parse from message or direct prop
       if (err?.code === 'EMAIL_NOT_VERIFIED' || msg.includes('верифициран')) {
         setUnverifiedEmail(formData.email);
+      }
+      if (err?.code === 'ACCOUNT_SUSPENDED') {
+        setIsSuspended(true);
       }
       setError(msg);
     }
@@ -52,7 +57,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       <h2>Вход</h2>
       <form onSubmit={handleSubmit} className="form-container">
         {error && (
-          unverifiedEmail ? (
+          isSuspended ? (
+            <div className="suspended-message">
+              <FaBan className="suspended-message-icon" />
+              <h3>Акаунтът е спрян</h3>
+              <p>{error}</p>
+              <p className="suspended-hint">Свържи се с администратор за повече информация.</p>
+            </div>
+          ) : unverifiedEmail ? (
             <div className="approval-denied-message">
               <FaExclamationCircle className="approval-denied-icon" style={{ color: '#a78bfa' }} />
               <h3>Имейлът не е верифициран</h3>
